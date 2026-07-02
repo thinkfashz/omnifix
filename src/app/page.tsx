@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
-import OmnifixHomeExperience from '@/components/OmnifixHomeExperience';
+import OmnifixStoreClient from '@/components/store/OmnifixStoreClient';
 
 export default function Home() {
-  return <OmnifixHomeExperience />;
+  return <OmnifixStoreClient />;
 }
