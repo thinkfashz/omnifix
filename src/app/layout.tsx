@@ -9,6 +9,7 @@ import SmoothScrollProvider from '@/components/SmoothScrollProvider';
 import OmnifixSplashScreen from '@/components/OmnifixSplashScreen';
 import OmnifixBrandRuntime from '@/components/OmnifixBrandRuntime';
 import CookieConsentBanner from '@/components/CookieConsentBanner';
+import OmnifixMobileBottomNav from '@/components/OmnifixMobileBottomNav';
 
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
@@ -27,16 +28,29 @@ import { TenantThemeRuntime } from '@/components/tenant/TenantThemeRuntime';
 import { TenantCopyRuntime } from '@/components/tenant/TenantCopyRuntime';
 import { getSiteSection } from '@/lib/siteStructure';
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://omnifix-pearl.vercel.app';
+const ogImage = '/omnifix-og.svg';
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://omnifix.cl'),
-  title: { default: 'Omnifix | Tienda tecnológica y soluciones ecommerce en Chile', template: '%s | Omnifix' },
-  description: 'Empresa de tecnología, smart home, redes, computadores, POS y soluciones ecommerce. Más de 5 años vendiendo, implementando e innovando para clientes y negocios.',
-  keywords: ['tienda tecnología Chile', 'ecommerce tecnología Chile', 'smart home Chile', 'computadores Chile', 'soporte tecnológico Chile', 'omnifix ecommerce', 'implementación ecommerce Chile', 'redes wifi Chile', 'seguridad electrónica Chile', 'terminal punto de venta Chile'],
+  metadataBase: new URL(siteUrl),
+  title: { default: 'Omnifix | Tienda de productos tecnológicos en Chile', template: '%s | Omnifix' },
+  description: 'Omnifix es una tienda tecnológica de productos, smart home, accesorios, carga, audio, redes y soluciones ecommerce con checkout seguro.',
+  keywords: ['tienda tecnológica Chile', 'productos tecnológicos Chile', 'smart home Chile', 'accesorios tecnológicos', 'audio bluetooth', 'power bank Chile', 'checkout Shopify Chile', 'omnifix tienda', 'ecommerce tecnología Chile'],
   authors: [{ name: 'Omnifix' }],
-  openGraph: { title: 'Omnifix | Tecnología, automatización y comercio inteligente', description: 'Tienda tecnológica, ecommerce, smart home, redes, POS y soporte para clientes y negocios en Chile.', url: 'https://omnifix.cl', siteName: 'Omnifix', locale: 'es_CL', type: 'website', images: [{ url: '/omnifix-logo.svg', width: 1200, height: 820, alt: 'Omnifix' }] },
-  twitter: { card: 'summary_large_image', title: 'Omnifix', description: 'Tecnología, ecommerce y soporte en Chile', images: ['/omnifix-logo.svg'] },
+  creator: 'Omnifix',
+  publisher: 'Omnifix',
+  openGraph: {
+    title: 'Omnifix | Tienda tecnológica',
+    description: 'Productos tecnológicos, smart home, audio, carga, accesorios y checkout seguro.',
+    url: siteUrl,
+    siteName: 'Omnifix',
+    locale: 'es_CL',
+    type: 'website',
+    images: [{ url: ogImage, width: 1200, height: 630, alt: 'Omnifix tienda tecnológica' }],
+  },
+  twitter: { card: 'summary_large_image', title: 'Omnifix | Tienda tecnológica', description: 'Productos tecnológicos, smart home y accesorios con checkout seguro.', images: [ogImage] },
   robots: { index: true, follow: true },
-  alternates: { canonical: 'https://omnifix.cl' },
+  alternates: { canonical: siteUrl },
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Omnifix' },
   icons: { icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }, { url: '/icon-192.png', type: 'image/png', sizes: '192x192' }, { url: '/icon-512.png', type: 'image/png', sizes: '512x512' }], apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }], shortcut: ['/favicon.svg'] },
@@ -52,6 +66,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta property="og:image:type" content="image/svg+xml" />
         <GlobalStylesRoot />
         <CustomInjectionRoot slot="head" />
       </head>
@@ -70,6 +85,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <TenantBrandingBar />
                   <ServiceWorkerRegister />
                   <InstallAppPrompt />
+                  <OmnifixMobileBottomNav />
                   <CookieConsentBanner />
                   <AIAgentChat hideOn={['/admin', '/auth', '/checkout', '/presupuestos', '/p/']} />
                   <Analytics />
