@@ -7,6 +7,13 @@ import 'server-only';
  * supply that credential.
  */
 export const INTEGRATIONS_ENV_MAP: Record<string, Record<string, readonly string[]>> = {
+	shopify: {
+		shop_domain: ['SHOPIFY_STORE_DOMAIN'],
+		storefront_access_token: ['SHOPIFY_STOREFRONT_ACCESS_TOKEN'],
+		admin_api_token: ['SHOPIFY_ADMIN_API_TOKEN'],
+		api_version: ['SHOPIFY_API_VERSION'],
+		webhook_secret: ['SHOPIFY_WEBHOOK_SECRET'],
+	},
 	stripe: {
 		secret_key: ['STRIPE_SECRET_KEY'],
 		public_key: ['NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', 'STRIPE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_STRIPE_PUBLIC_KEY'],
