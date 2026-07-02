@@ -1,0 +1,127 @@
+/* Fabrick Admin Theme — single source of truth for /admin */
+:root {
+  --fabrick-bg: #050505;
+  --fabrick-panel: rgba(10, 10, 10, 0.62);
+  --fabrick-panel-strong: rgba(5, 5, 5, 0.84);
+  --fabrick-border: rgba(255, 255, 255, 0.12);
+  --fabrick-gold: #facc15;
+  --fabrick-amber: #d6a52f;
+  --fabrick-silver: #c8c8c8;
+  --fabrick-text: #f8f5ee;
+  --fabrick-muted: rgba(248, 245, 238, .62);
+}
+
+html, body { max-width: 100%; overflow-x: hidden; background: var(--fabrick-bg); }
+body { color: var(--fabrick-text); }
+
+.sf-admin-colombia-bg {
+  position: relative;
+  min-height: 100dvh;
+  width: 100%;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(250,204,21,.12), transparent 26rem),
+    radial-gradient(circle at 92% 12%, rgba(255,255,255,.08), transparent 24rem),
+    linear-gradient(180deg, #080808 0%, #050505 52%, #020202 100%);
+  isolation: isolate;
+}
+
+.sf-admin-colombia-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  background:
+    linear-gradient(120deg, rgba(250,204,21,.08), transparent 36%, rgba(255,255,255,.045) 58%, transparent),
+    radial-gradient(circle at 50% 100%, rgba(214,165,47,.08), transparent 34rem);
+}
+
+.sf-admin-colombia-bg::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255,255,255,.07), transparent 28rem),
+    linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.60));
+  pointer-events: none;
+}
+
+.sf-admin-colombia-gradients {
+  position: fixed;
+  inset: -12%;
+  z-index: -2;
+  opacity: .30;
+  pointer-events: none;
+  filter: blur(56px);
+}
+
+.sf-admin-blob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52vmax;
+  height: 52vmax;
+  border-radius: 9999px;
+  opacity: .42;
+}
+.sf-admin-blob-1 { background: radial-gradient(circle, rgba(250,204,21,.34) 0%, rgba(250,204,21,0) 58%); transform: translate(-78%, -60%); }
+.sf-admin-blob-2 { background: radial-gradient(circle, rgba(255,255,255,.20) 0%, rgba(255,255,255,0) 60%); transform: translate(-18%, -72%); }
+.sf-admin-blob-3 { background: radial-gradient(circle, rgba(214,165,47,.20) 0%, rgba(214,165,47,0) 58%); transform: translate(-15%, -15%); }
+.sf-admin-blob-4 { display: none; }
+.sf-admin-blob-5 { display: none; }
+.sf-admin-colombia-content { position: relative; z-index: 1; min-height: 100dvh; }
+
+[data-admin-shell], .admin-shell, main { max-width: 100vw; overflow-x: hidden; }
+main { width: 100%; min-height: 100dvh; margin-inline: auto; }
+main > section, main > div, .fabrick-page, .fabrick-container { width: min(100%, 1680px); max-width: calc(100vw - 24px); margin-inline: auto; }
+section, article, aside, header, footer, div, form, table, input, textarea, select, iframe { min-width: 0; box-sizing: border-box; }
+img, video, canvas, svg, iframe { max-width: 100%; }
+table { border-collapse: collapse; }
+.overflow-x-auto { max-width: 100%; }
+
+input, textarea, select { color: var(--fabrick-text); background: rgba(0, 0, 0, .35); border-color: rgba(255, 255, 255, .12); }
+input:focus, textarea:focus, select:focus { outline: none; border-color: rgba(250, 204, 21, .74) !important; box-shadow: 0 0 0 4px rgba(250, 204, 21, .09); }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { touch-action: manipulation; }
+
+.fabrick-card, .fabrick-panel, .glass-card, [class*='bg-black/55'], [class*='bg-black/45'], [class*='bg-zinc-950'], [class*='bg-[#050403]'] {
+  border-color: rgba(250, 204, 21, .13) !important;
+  background-color: rgba(4, 4, 4, .58);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+[class*='rounded-[2rem]'], [class*='rounded-[2.4rem]'], [class*='rounded-[2.6rem]'], .rounded-3xl { box-shadow: 0 24px 90px rgba(0, 0, 0, .34); }
+.fabrick-grid-safe, [class*='grid'] { min-width: 0; }
+.fabrick-scroll-safe { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.fabrick-admin-title { color: var(--fabrick-text); letter-spacing: -0.055em; }
+.fabrick-admin-muted { color: var(--fabrick-muted); }
+.fabrick-admin-button, button[class*='bg-amber-400'], button[class*='bg-yellow'] { box-shadow: 0 16px 40px rgba(250, 204, 21, .16); }
+
+@media (max-width: 1280px) {
+  main > section, main > div, .fabrick-page, .fabrick-container { max-width: calc(100vw - 18px); }
+  [class*='xl:grid-cols'] { grid-template-columns: minmax(0, 1fr) !important; }
+  aside[class*='sticky'], section[class*='sticky'], div[class*='sticky'] { position: static !important; max-height: none !important; }
+}
+
+@media (max-width: 768px) {
+  main { padding-inline: 0 !important; }
+  main > section, main > div, .fabrick-page, .fabrick-container { max-width: calc(100vw - 12px); }
+  [class*='p-8'] { padding: 1rem !important; }
+  [class*='p-7'] { padding: 1rem !important; }
+  [class*='p-6'] { padding: .9rem !important; }
+  [class*='text-7xl'] { font-size: 2.6rem !important; line-height: .96 !important; }
+  [class*='text-6xl'] { font-size: 2.25rem !important; line-height: .98 !important; }
+  [class*='text-5xl'] { font-size: 2rem !important; line-height: 1 !important; }
+  [class*='text-4xl'] { font-size: 1.75rem !important; line-height: 1.05 !important; }
+  button, a { max-width: 100%; }
+  .flex { min-width: 0; }
+  .break-all { word-break: break-word; }
+  table { min-width: 640px; }
+  .sf-admin-colombia-gradients { opacity: .22; filter: blur(54px); }
+  .sf-admin-blob { width: 66vmax; height: 66vmax; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}

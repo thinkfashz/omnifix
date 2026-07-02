@@ -1,0 +1,588 @@
+'use client';
+
+/* eslint-disable @next/next/no-img-element */
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useRealtimeProducts } from '@/hooks/useRealtimeProducts';
+import { useCartContext } from '@/context/CartContext';
+import { formatCLP } from '@/hooks/useCart';
+import { useSiteContent } from '@/hooks/useSiteContent';
+import {
+  Star, Check, Truck, ArrowLeft, ShoppingCart, ChevronRight, Zap,
+  CircleCheckBig, LoaderCircle, Minus, Plus,
+} from 'lucide-react';
+import FavoriteButton from '@/components/store/FavoriteButton';
+
+/* ─── Animation variants (motion.dev / framer-motion) ───────── */
+const containerVariants = {
+  hidden:   { opacity: 0 },
+  visible:  {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+  },
+} as const;
+
+const itemVariants = {
+  hidden:   { opacity: 0, y: 28, filter: 'blur(4px)' },
+  visible:  {
+    opacity: 1, y: 0, filter: 'blur(0px)',
+    transition: { type: 'spring' as const, stiffness: 120, damping: 18, mass: 0.8 },
+  },
+};
+
+const imageVariants = {
+  hidden:   { opacity: 0, scale: 0.93 },
+  visible:  {
+    opacity: 1, scale: 1,
+    transition: { type: 'spring' as const, stiffness: 90, damping: 20 },
+  },
+};
+
+/* ─── Skeleton ────────────────────────────────────────────────── */
+function ProductSkeleton() {
+  return (
+    <div className="min-h-screen bg-black px-6 py-24 md:px-12">
+      <div className="max-w-6xl mx-auto">
+        <div className="h-3 w-40 bg-white/5 rounded-full animate-pulse mb-14" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="aspect-square bg-white/[0.04] rounded-2xl animate-pulse" />
+          <div className="space-y-5 pt-2">
+            <div className="h-9  bg-white/[0.04] rounded-lg animate-pulse w-4/5" />
+            <div className="h-7  bg-white/[0.04] rounded-lg animate-pulse w-1/3" />
+            <div className="h-3  bg-white/[0.04] rounded-full animate-pulse" />
+            <div className="h-3  bg-white/[0.04] rounded-full animate-pulse w-5/6" />
+            <div className="h-3  bg-white/[0.04] rounded-full animate-pulse w-4/6" />
+            <div className="h-px bg-white/[0.04] animate-pulse mt-4" />
+            <div className="h-14 bg-white/[0.04] rounded-xl animate-pulse mt-6" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Not Found ───────────────────────────────────────────────── */
+function NotFound() {
+  return (
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center text-center px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55 }}
+        className="space-y-5"
+      >
+        <p className="text-white/10 text-8xl font-playfair select-none">404</p>
+        <h2 className="text-white text-2xl font-playfair">Producto no encontrado</h2>
+        <p className="text-white/35 text-sm max-w-xs mx-auto leading-relaxed">
+          Este producto no existe o fue eliminado del catálogo.
+        </p>
+        <Link
+          href="/tienda"
+          className="inline-flex items-center gap-2 text-yellow-400 hover:text-yellow-300 text-sm transition-colors mt-2"
+        >
+          <ArrowLeft size={13} />
+          Ver todos los productos
+        </Link>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ─── Main page ───────────────────────────────────────────────── */
+export default function ProductoClient() {
+  const params  = useParams<{ id: string }>();
+  const router  = useRouter();
+  const { products, loading } = useRealtimeProducts();
+  const { addToCart, openCart } = useCartContext();
+  const productoCms = useSiteContent('producto');
+  const [added, setAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+
+  /* ─── Particle burst (fly-to-cart) refs ───────────────────────
+     Mirrors the pattern used in the storefront listing: a small
+     pool of GSAP-driven particles spawned from the add-to-cart
+     button and arced toward the navbar cart icon, tracked so we
+     can kill any in-flight tweens and remove their DOM nodes on
+     unmount (avoids leaking tweens/nodes between navigations). */
+  const addButtonRef     = useRef<HTMLButtonElement>(null);
+  const gsapRef          = useRef<null | typeof import('gsap').default>(null);
+  const activeParticlesRef = useRef<Array<{ el: HTMLDivElement; tween: gsap.core.Tween }>>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadGsap() {
+      const { default: gsap } = await import('gsap');
+      if (mounted) gsapRef.current = gsap;
+    }
+    void loadGsap();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Cleanup any in-flight "add to cart" particle animations on unmount so we
+  // never leave orphaned DOM nodes or running GSAP tweens behind.
+  useEffect(() => {
+    return () => {
+      activeParticlesRef.current.forEach(({ el, tween }) => {
+        tween.kill();
+        el.remove();
+      });
+      activeParticlesRef.current = [];
+    };
+  }, []);
+
+  const id = params?.id ?? '';
+
+  const product = useMemo(
+    () => products.find(p => p.id === id),
+    [products, id],
+  );
+
+  const hasDiscount = Boolean(product?.discount_percentage && product.discount_percentage > 0);
+  const finalPrice  = product
+    ? hasDiscount
+      ? product.price * (1 - (product.discount_percentage! / 100))
+      : product.price
+    : 0;
+
+  const specEntries = product?.specifications
+    ? Object.entries(product.specifications)
+    : [];
+
+  /* Spawns a small burst of yellow/amber particles from the add-to-cart
+     button that arc toward the navbar's cart icon (or the top-right
+     corner as a fallback target), mirroring the storefront listing's
+     fly-to-cart effect — kept lighter for a single-product page. */
+  function spawnAddToCartParticles() {
+    const gsap   = gsapRef.current;
+    const button = addButtonRef.current;
+    if (!gsap || !button) return;
+
+    const originRect = button.getBoundingClientRect();
+    const cartEl     = document.querySelector<HTMLElement>('[aria-label*="Carrito de compras"]');
+    const targetRect = cartEl?.getBoundingClientRect() ?? null;
+    const targetX    = targetRect ? targetRect.left + targetRect.width  / 2 : window.innerWidth - 32;
+    const targetY    = targetRect ? targetRect.top  + targetRect.height / 2 : 28;
+
+    const PARTICLE_COUNT = 8;
+    for (let i = 0; i < PARTICLE_COUNT; i += 1) {
+      const startX = originRect.left + originRect.width  * (0.3 + Math.random() * 0.4);
+      const startY = originRect.top  + originRect.height * (0.3 + Math.random() * 0.4);
+
+      const particle = document.createElement('div');
+      particle.className = 'fixed z-[600] rounded-full pointer-events-none';
+      const size = 6 + Math.random() * 6;
+      particle.style.width  = `${size}px`;
+      particle.style.height = `${size}px`;
+      particle.style.left   = `${startX}px`;
+      particle.style.top    = `${startY}px`;
+      particle.style.background = i % 2 === 0 ? '#FACC15' : '#FDE047';
+      particle.style.boxShadow  = '0 0 12px rgba(250, 204, 21, 0.65)';
+      document.body.appendChild(particle);
+
+      const tween = gsap.to(particle, {
+        duration: 0.6 + Math.random() * 0.3,
+        x: targetX - startX,
+        y: targetY - startY,
+        scale: 0.2,
+        opacity: 0,
+        ease: 'power2.in',
+        delay: i * 0.035,
+        onComplete: () => {
+          activeParticlesRef.current = activeParticlesRef.current.filter((entry) => entry.el !== particle);
+          particle.remove();
+        },
+      });
+
+      activeParticlesRef.current.push({ el: particle, tween });
+    }
+  }
+
+  async function handleAddToCart() {
+    if (!product) return;
+    if (typeof product.stock === 'number' && product.stock < 1) return;
+    if (adding) return;
+    const qty = Math.max(1, Math.min(99, quantity || 1));
+
+    setAdding(true);
+    const startedAt = Date.now();
+    try {
+      addToCart(product, qty);
+      spawnAddToCartParticles();
+
+      // `addToCart` is synchronous, but a tiny minimum-duration loading
+      // state reads as more deliberate/premium than an instant flicker —
+      // without padding it past what feels responsive.
+      const MIN_LOADING_MS = 320;
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < MIN_LOADING_MS) {
+        await new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS - elapsed));
+      }
+
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2200);
+      openCart();
+    } catch {
+      // Defensive: if the store throws, don't lock the UI in "added" state.
+      setAdded(false);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  function handleBuyNow() {
+    if (!product) return;
+    if (typeof product.stock === 'number' && product.stock < 1) return;
+    const qty = Math.max(1, Math.min(99, quantity || 1));
+    try {
+      addToCart(product, qty);
+      router.push('/checkout');
+    } catch {
+      // ignore
+    }
+  }
+
+  /* States */
+  if (loading)                 return <ProductSkeleton />;
+  if (!loading && !product)    return <NotFound />;
+
+  return (
+    <div className="min-h-screen bg-black">
+
+      <div className="max-w-6xl mx-auto px-6 md:px-12 pt-24 pb-32">
+
+        {/* ── Breadcrumb ── */}
+        <motion.nav
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="flex items-center gap-2 text-[11px] text-white/25 mb-14 tracking-wide"
+          aria-label="Breadcrumb"
+        >
+          <Link href="/"       className="hover:text-white/50 transition-colors">Inicio</Link>
+          <ChevronRight size={9} className="text-white/10 flex-shrink-0" />
+          <Link href="/tienda" className="hover:text-white/50 transition-colors">Tienda</Link>
+          <ChevronRight size={9} className="text-white/10 flex-shrink-0" />
+          <span className="text-white/45 truncate max-w-[200px]">{product!.name}</span>
+        </motion.nav>
+
+        {/* ── Main two-column layout ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20 items-start">
+
+          {/* Image */}
+          <motion.div
+            variants={imageVariants}
+            initial="hidden"
+            animate="visible"
+            className="relative"
+          >
+            {/* Glow halo */}
+            <div className="absolute inset-0 bg-yellow-400/[0.06] blur-3xl rounded-full scale-75 translate-y-10 pointer-events-none" />
+
+            <div className="relative aspect-square rounded-2xl overflow-hidden bg-white/[0.03] border border-white/[0.07]">
+              {product!.image_url ? (
+                <img
+                  src={product!.image_url}
+                  alt={product!.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white/10 text-6xl font-playfair select-none">
+                  {product!.name[0]}
+                </div>
+              )}
+
+              {/* Discount badge */}
+              {hasDiscount && (
+                <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-red-500 text-white text-xs font-bold shadow-lg">
+                  -{product!.discount_percentage}%
+                </div>
+              )}
+
+              {/* Featured badge */}
+              {product!.featured && (
+                <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-yellow-400/20 backdrop-blur-sm border border-yellow-400/25 text-yellow-400 text-xs font-medium">
+                  ★ Destacado
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Info */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6 md:pt-2"
+          >
+            {/* Name */}
+            <motion.h1
+              variants={itemVariants}
+              className="font-playfair text-3xl md:text-4xl lg:text-5xl text-white leading-tight"
+            >
+              {product!.name}
+            </motion.h1>
+
+            {/* Price */}
+            <motion.div variants={itemVariants} className="flex items-baseline gap-3 flex-wrap">
+              <span className="text-yellow-400 text-2xl md:text-3xl font-medium">
+                {formatCLP(finalPrice)}
+              </span>
+              {hasDiscount && (
+                <>
+                  <span className="text-white/20 text-base line-through">
+                    {formatCLP(product!.price)}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-yellow-400/[0.12] text-yellow-400/80 text-xs font-bold border border-yellow-400/20">
+                    -{product!.discount_percentage}% OFF
+                  </span>
+                </>
+              )}
+            </motion.div>
+
+            {/* Star rating */}
+            {product!.rating !== undefined && product!.rating > 0 && (
+              <motion.div variants={itemVariants} className="flex items-center gap-2">
+                <div className="flex items-center gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      size={13}
+                      className={
+                        i < Math.round(product!.rating!)
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-white/10 fill-white/[0.04]'
+                      }
+                    />
+                  ))}
+                </div>
+                <span className="text-white/25 text-xs">{product!.rating.toFixed(1)}</span>
+              </motion.div>
+            )}
+
+            {/* Description */}
+            {product!.description && (
+              <motion.p variants={itemVariants} className="text-white/40 text-sm leading-relaxed">
+                {product!.description}
+              </motion.p>
+            )}
+
+            {/* Stock & delivery */}
+            <motion.div variants={itemVariants} className="flex flex-wrap gap-3">
+              {product!.stock !== undefined ? (
+                product!.stock > 0 ? (
+                  <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/[0.07] border border-green-500/[0.18] text-green-400 text-xs">
+                    <Check size={11} strokeWidth={2.5} />
+                    <span>En stock</span>
+                    <span className="text-green-400/40">·</span>
+                    <span className="text-green-400/70">{product!.stock} disponibles</span>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/[0.07] border border-red-500/[0.18] text-red-400/70 text-xs">
+                    <span>{productoCms.outOfStockLabel}</span>
+                  </div>
+                )
+              ) : null}
+
+              {product!.delivery_days && (
+                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.07] text-white/35 text-xs">
+                  <Truck size={11} />
+                  <span>Entrega en {product!.delivery_days} días</span>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Divider */}
+            <motion.div variants={itemVariants} className="h-px bg-white/[0.06]" />
+
+            {/* CTA */}
+            <motion.div variants={itemVariants} className="space-y-3 pt-1">
+              {/* Quantity selector */}
+              {(product!.stock === undefined || product!.stock > 0) && (
+                <div className="flex items-center gap-3">
+                  <span className="text-white/40 text-[11px] uppercase tracking-widest">
+                    Cantidad
+                  </span>
+                  <div className="inline-flex items-center rounded-full border border-white/[0.1] bg-white/[0.03]">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      aria-label="Disminuir cantidad"
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white/60 hover:text-yellow-400 transition-colors disabled:opacity-30 disabled:hover:text-white/60"
+                      disabled={quantity <= 1}
+                    >
+                      <Minus size={14} strokeWidth={2.5} />
+                    </button>
+                    <span
+                      className="min-w-[2.25rem] text-center text-sm text-white tabular-nums"
+                      aria-live="polite"
+                    >
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setQuantity((q) =>
+                          Math.min(
+                            typeof product!.stock === 'number' ? product!.stock : 99,
+                            q + 1,
+                          ),
+                        )
+                      }
+                      aria-label="Aumentar cantidad"
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white/60 hover:text-yellow-400 transition-colors disabled:opacity-30 disabled:hover:text-white/60"
+                      disabled={
+                        typeof product!.stock === 'number' && quantity >= product!.stock
+                      }
+                    >
+                      <Plus size={14} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <AnimatePresence mode="wait">
+                {added ? (
+                  <motion.div
+                    key="added"
+                    initial={{ opacity: 0, scale: 0.96, y: 4 }}
+                    animate={{ opacity: 1, scale: 1,  y: 0 }}
+                    exit={{    opacity: 0, scale: 0.96, y: -4 }}
+                    transition={{ duration: 0.25 }}
+                    className="w-full min-h-[44px] py-4 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 flex items-center justify-center gap-3 text-sm font-medium"
+                  >
+                    <CircleCheckBig size={16} strokeWidth={2.25} className="text-yellow-400" />
+                    ¡Agregado al carrito!
+                  </motion.div>
+                ) : (
+                  <motion.button
+                    key="add"
+                    ref={addButtonRef}
+                    initial={{ opacity: 0, scale: 0.94, y: 6 }}
+                    animate={{ opacity: 1, scale: 1,  y: 0 }}
+                    exit={{    opacity: 0, scale: 0.94, y: -6 }}
+                    whileHover={adding ? undefined : { scale: 1.025, boxShadow: '0 0 28px rgba(250,204,21,0.18)' }}
+                    whileTap={adding ? undefined : { scale: 0.97 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+                    onClick={handleAddToCart}
+                    disabled={(product!.stock !== undefined && product!.stock < 1) || adding}
+                    aria-busy={adding}
+                    className="w-full min-h-[44px] py-4 rounded-xl relative overflow-hidden group
+                      bg-gradient-to-r from-zinc-800 to-zinc-700 border border-white/[0.09] text-white
+                      hover:border-yellow-400/35 hover:from-zinc-700 hover:to-zinc-600
+                      disabled:opacity-60 disabled:cursor-not-allowed
+                      flex items-center justify-center gap-3 text-sm font-medium cursor-pointer"
+                  >
+                    {/* Shimmer sweep */}
+                    <span
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-400/[0.08] to-transparent
+                        translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 pointer-events-none"
+                    />
+                    {adding ? (
+                      <>
+                        <LoaderCircle size={15} className="text-yellow-400 relative z-10 animate-spin" />
+                        <span className="relative z-10">Agregando…</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart size={15} className="text-yellow-400 relative z-10" />
+                        <span className="relative z-10">{productoCms.addToCartLabel}</span>
+                      </>
+                    )}
+                  </motion.button>
+                )}
+              </AnimatePresence>
+
+              {/* Secondary actions: Buy Now + Favorite (registered customers) */}
+              <div className="flex gap-2 pt-1" aria-live="polite">
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  disabled={typeof product!.stock === 'number' && product!.stock < 1}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-yellow-400/40 bg-yellow-400/10 text-yellow-300 px-5 py-3 text-xs font-bold uppercase tracking-widest transition hover:border-yellow-400 hover:bg-yellow-400/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Zap size={13} />
+                  Comprar ahora
+                </button>
+                <FavoriteButton productId={product!.id} variant="pill" />
+              </div>
+
+              <button
+                onClick={() => router.back()}
+                className="w-full py-3 text-white/20 hover:text-white/45 text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <ArrowLeft size={11} />
+                Volver a la tienda
+              </button>
+            </motion.div>
+          </motion.div>
+        </div>
+
+        {/* ── Specifications ── */}
+        {specEntries.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
+            className="mt-24 max-w-2xl"
+            aria-label="Especificaciones del producto"
+          >
+            <h2 className="text-white/30 text-[10px] tracking-[0.35em] uppercase mb-6 font-medium">
+              Especificaciones
+            </h2>
+
+            <div className="rounded-xl overflow-hidden border border-white/[0.06]">
+              {specEntries.map(([key, value], i) => (
+                <div
+                  key={key}
+                  className={`flex justify-between items-center px-5 py-3.5 ${
+                    i % 2 === 0 ? 'bg-white/[0.02]' : 'bg-transparent'
+                  }`}
+                >
+                  <span className="text-white/30 text-sm capitalize">
+                    {key.replace(/_/g, ' ')}
+                  </span>
+                  <span className="text-white/60 text-sm text-right max-w-[55%]">
+                    {String(value)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+        )}
+
+        {/* ── Bottom CTA strip ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+          className="mt-16 flex items-center gap-6 flex-wrap"
+        >
+          <Link
+            href="/tienda"
+            className="inline-flex items-center gap-2 text-white/25 hover:text-white/55 text-xs transition-colors"
+          >
+            <ArrowLeft size={12} />
+            Todos los productos
+          </Link>
+          <span className="text-white/10 text-xs hidden sm:block">·</span>
+          <Link
+            href="/#servicios"
+            className="text-white/25 hover:text-white/55 text-xs transition-colors hidden sm:block"
+          >
+            Ver servicios
+          </Link>
+        </motion.div>
+
+      </div>
+    </div>
+  );
+}
+
+
+

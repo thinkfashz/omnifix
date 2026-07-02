@@ -1,0 +1,26 @@
+{
+  "name": "Omnifix",
+  "short_name": "Omnifix",
+  "description": "Tienda electrónica de tecnología, smart home, redes, computadores, POS y soluciones ecommerce en Chile.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#05070d",
+  "theme_color": "#0f1bff",
+  "lang": "es-CL",
+  "dir": "ltr",
+  "categories": ["shopping", "business", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Tienda Omnifix", "short_name": "Tienda", "description": "Ver productos tecnológicos", "url": "/tienda?source=shortcut", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Panel admin", "short_name": "Admin", "description": "Gestionar ecommerce", "url": "/admin/omnifix?source=shortcut", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Contacto", "short_name": "Contacto", "description": "Hablar con Omnifix", "url": "/contacto?source=shortcut", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

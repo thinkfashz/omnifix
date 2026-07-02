@@ -1,0 +1,5 @@
+services:
+  fabrick:
+    image: casasfabrick/fabrick-store:latest
+    ports:
+      - "3000:3000"

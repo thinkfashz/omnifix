@@ -1,0 +1,163 @@
+/* Global responsive safety layer for public site + admin */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body,
+#__next,
+.app-shell {
+  min-width: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+main,
+section,
+article,
+aside,
+header,
+footer,
+nav,
+div,
+form,
+ul,
+ol,
+li,
+table,
+thead,
+tbody,
+tr,
+td,
+th,
+canvas,
+svg,
+iframe,
+video,
+img {
+  max-width: 100%;
+}
+
+main,
+section,
+article,
+aside,
+header,
+footer,
+div,
+form,
+.grid,
+.flex {
+  min-width: 0;
+}
+
+img,
+video,
+canvas,
+svg,
+iframe {
+  height: auto;
+}
+
+pre,
+code,
+textarea,
+input,
+select,
+button,
+a {
+  max-width: 100%;
+}
+
+pre,
+code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.overflow-x-auto,
+.fabrick-scroll-safe,
+[data-radix-scroll-area-viewport] {
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1280px) {
+  .xl\:grid-cols-2,
+  .xl\:grid-cols-3,
+  .xl\:grid-cols-4,
+  .xl\:grid-cols-5,
+  .xl\:grid-cols-6 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .sticky {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .lg\:grid-cols-2,
+  .lg\:grid-cols-3,
+  .lg\:grid-cols-4,
+  .lg\:grid-cols-5,
+  .lg\:grid-cols-6 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    overscroll-behavior-x: none;
+  }
+
+  main,
+  section {
+    max-width: 100vw;
+  }
+
+  .p-12 { padding: 1.25rem !important; }
+  .p-10 { padding: 1.15rem !important; }
+  .p-8 { padding: 1rem !important; }
+  .p-7 { padding: 1rem !important; }
+  .p-6 { padding: .95rem !important; }
+
+  .text-8xl { font-size: 3rem !important; line-height: .94 !important; }
+  .text-7xl { font-size: 2.65rem !important; line-height: .96 !important; }
+  .text-6xl { font-size: 2.35rem !important; line-height: .98 !important; }
+  .text-5xl { font-size: 2.05rem !important; line-height: 1 !important; }
+  .text-4xl { font-size: 1.75rem !important; line-height: 1.05 !important; }
+
+  table {
+    min-width: 640px;
+  }
+
+  .table-auto,
+  .table-fixed {
+    display: block;
+    overflow-x: auto;
+  }
+
+  button,
+  a {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .rounded-3xl,
+  .rounded-\[2rem\],
+  .rounded-\[2\.4rem\],
+  .rounded-\[2\.6rem\] {
+    border-radius: 1.35rem !important;
+  }
+}
