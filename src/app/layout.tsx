@@ -7,6 +7,7 @@ import './remove-obsolete-sections.css';
 import InstallAppPrompt from '@/components/InstallAppPrompt';
 import SmoothScrollProvider from '@/components/SmoothScrollProvider';
 import OmnifixSplashScreen from '@/components/OmnifixSplashScreen';
+import OmnifixBrandRuntime from '@/components/OmnifixBrandRuntime';
 
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
@@ -24,25 +25,6 @@ import { TenantBrandingBar } from '@/components/tenant/TenantBrandingBar';
 import { TenantThemeRuntime } from '@/components/tenant/TenantThemeRuntime';
 import { TenantCopyRuntime } from '@/components/tenant/TenantCopyRuntime';
 import { getSiteSection } from '@/lib/siteStructure';
-
-// Force per-request rendering for every route in the app.
-//
-// Why: `src/middleware.ts` emits a strict, nonce-based Content-Security-Policy
-// on every HTML response (see `src/lib/csp.ts`). Next.js 15 injects inline
-// `<script>self.__next_f.push(...)</script>` tags into every server-rendered
-// page to stream the React Server Component payload. Those inline scripts must
-// carry the same nonce as the CSP header - otherwise the browser blocks them,
-// React never hydrates, and users see a black screen until they happen to land
-// on a fresh dynamic render.
-//
-// On a *statically prerendered* route, the nonce is baked into the HTML at
-// build time and can never match the per-request nonce that middleware emits.
-// Setting `dynamic = 'force-dynamic'` at the root layout cascades to every
-// nested segment, ensuring Next.js renders each request server-side and stamps
-// the inline scripts with the runtime nonce. This is the canonical Next.js
-// pattern paired with strict nonce CSP. See the README of @next/csp examples
-// and the middleware source in this repo for the full rationale.
-
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://omnifix.cl'),
@@ -73,34 +55,25 @@ export const metadata: Metadata = {
     siteName: 'Omnifix',
     locale: 'es_CL',
     type: 'website',
+    images: [{ url: '/omnifix-logo.svg', width: 1200, height: 820, alt: 'Omnifix' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Omnifix',
     description: 'Tecnología, ecommerce y soporte en Chile',
+    images: ['/omnifix-logo.svg'],
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  alternates: {
-    canonical: 'https://omnifix.cl',
-  },
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://omnifix.cl' },
   manifest: '/manifest.webmanifest',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'Omnifix',
-  },
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Omnifix' },
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
       { url: '/icon-512.png', type: 'image/png', sizes: '512x512' },
     ],
-    apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
     shortcut: ['/favicon.svg'],
   },
 };
@@ -129,6 +102,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="bg-black text-white antialiased app-shell">
         <OmnifixSplashScreen />
+        <OmnifixBrandRuntime />
         <SiteConfigProvider initial={{ 'nav-menu': navMenu, 'global-styles': globalStyles }}>
           <ThemeProvider>
             <AuthProvider>
