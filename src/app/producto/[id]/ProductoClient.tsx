@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -149,6 +150,6 @@ export default function ProductoClient() {
   );
 }
 
-function Info({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+function Info({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
   return <div className="rounded-2xl border border-white/10 bg-black/20 p-4"><div className="flex items-center gap-2 text-blue-100">{icon}<b className="text-xs uppercase tracking-[.16em]">{title}</b></div><p className="mt-2 text-sm text-white/62">{text}</p></div>;
 }
