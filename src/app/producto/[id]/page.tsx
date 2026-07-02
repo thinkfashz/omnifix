@@ -25,32 +25,33 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = data as ProductRow | null;
 
   if (!product?.name) {
-    return { title: 'Producto | Soluciones Fabrick' };
+    return {
+      title: 'Producto | Omnifix',
+      description: 'Ficha de producto tecnológico Omnifix con compra rápida y checkout seguro.',
+    };
   }
 
   const title = product.name;
-  const description =
-    product.description ?? buildProductMetaDescription(product.name, 'Descubre');
-
-  const images = product.image_url ? [{ url: product.image_url }] : [];
+  const description = product.description ?? buildProductMetaDescription(product.name, 'Descubre');
+  const images = product.image_url ? [{ url: product.image_url }] : ['/omnifix-og.svg'];
 
   return {
-    title,
+    title: `${title} | Omnifix`,
     description,
     openGraph: {
-      title: `${title} | Soluciones Fabrick`,
+      title: `${title} | Omnifix`,
       description,
       images,
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${title} | Soluciones Fabrick`,
+      title: `${title} | Omnifix`,
       description,
-      images: product.image_url ? [product.image_url] : [],
+      images: product.image_url ? [product.image_url] : ['/omnifix-og.svg'],
     },
     alternates: {
-      canonical: `https://www.solucionesfabrick.com/producto/${id}`,
+      canonical: `https://omnifix-pearl.vercel.app/producto/${id}`,
     },
   };
 }
