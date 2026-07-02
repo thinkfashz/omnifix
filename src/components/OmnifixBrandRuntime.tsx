@@ -11,9 +11,6 @@ const replacements: Array<[string, string]> = [
   ['CASAS FABRICK', 'OMNIFIX'],
   ['Fabrick', 'Omnifix'],
   ['FABRICK', 'OMNIFIX'],
-  ['Ingresa a tu cuenta Omnifix', 'Ingresa a tu cuenta Omnifix'],
-  ['Acceder a Omnifix', 'Acceder a Omnifix'],
-  ['Crear Cuenta Omnifix', 'Crear cuenta Omnifix'],
   ['Únete a la plataforma Omnifix', 'Crea tu usuario para comprar y revisar pedidos'],
   ['Arquitecto García', 'Nombre de usuario'],
   ['Eduardo Micolta', 'Nombre de usuario'],
@@ -29,7 +26,7 @@ function replaceValue(value: string) {
   return replacements.reduce((acc, [from, to]) => acc.split(from).join(to), value);
 }
 
-function walkText(root: ParentNode) {
+function walkText(root: Node) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const nodes: Text[] = [];
   while (walker.nextNode()) nodes.push(walker.currentNode as Text);
@@ -45,7 +42,6 @@ function walkText(root: ParentNode) {
 
 export default function OmnifixBrandRuntime() {
   const pathname = usePathname();
-
   useEffect(() => {
     if (pathname.startsWith('/api')) return;
     const apply = () => {
@@ -64,12 +60,7 @@ export default function OmnifixBrandRuntime() {
     const t1 = window.setTimeout(apply, 250);
     const t2 = window.setTimeout(apply, 900);
     const t3 = window.setTimeout(apply, 1800);
-    return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-      window.clearTimeout(t3);
-    };
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); window.clearTimeout(t3); };
   }, [pathname]);
-
   return null;
 }
