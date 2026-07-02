@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { CreditCard, Search, ShoppingBag, Sparkles, Star } from 'lucide-react';
+import { ArrowRight, ChevronDown, Grid2X2, Heart, Home, Search, ShoppingBag, SlidersHorizontal, Star, TrendingUp, User } from 'lucide-react';
 import { useCatalogProducts } from '@/hooks/useCatalogProducts';
 import { useCartContext } from '@/context/CartContext';
 import { OMNIFIX_EXTRA_PRODUCTS } from '@/lib/omnifixExtraProducts';
@@ -31,6 +31,8 @@ type Product = {
   tagline?: string;
 };
 
+const CATEGORY_LABELS = ['Todo', 'Computadores', 'Audio', 'Smart Home', 'Accesorios'];
+
 function clp(n: number) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n || 0);
 }
@@ -57,6 +59,14 @@ function toCart(p: Product) {
     shopifyHandle: p.shopifyHandle,
   } as never;
 }
+function labelFor(p: Product) {
+  const c = category(p).toLowerCase();
+  if (c.includes('comput') || c.includes('notebook') || c.includes('laptop')) return 'Laptop';
+  if (c.includes('audio') || c.includes('auricular')) return 'Audio';
+  if (c.includes('smart')) return 'Smart Home';
+  if (c.includes('carga') || c.includes('acces')) return 'Accesorio';
+  return category(p);
+}
 
 export default function OmnifixStoreClient() {
   const { products } = useCatalogProducts();
@@ -70,90 +80,81 @@ export default function OmnifixStoreClient() {
     return Array.from(map.values());
   }, [products]);
 
-  const categories = useMemo(() => ['Todo', ...Array.from(new Set(list.map(category))).slice(0, 8)], [list]);
   const filtered = useMemo(() => {
     const term = q.toLowerCase().trim();
     return list.filter((p) => {
-      const matchesCategory = selectedCategory === 'Todo' || category(p) === selectedCategory;
+      const rawCategory = category(p).toLowerCase();
+      const normalized = selectedCategory.toLowerCase();
+      const matchesCategory = selectedCategory === 'Todo'
+        || rawCategory.includes(normalized)
+        || (normalized === 'audio' && `${p.name} ${p.description || ''}`.toLowerCase().includes('audio'))
+        || (normalized === 'computadores' && `${p.name} ${p.description || ''}`.toLowerCase().match(/notebook|laptop|comput|pc/))
+        || (normalized === 'accesorios' && `${p.name} ${p.description || ''} ${rawCategory}`.toLowerCase().match(/acces|carga|hub|mouse|soporte|power/));
       const matchesSearch = !term || `${p.name} ${p.description || ''} ${category(p)}`.toLowerCase().includes(term);
       return matchesCategory && matchesSearch;
     });
   }, [list, q, selectedCategory]);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-white">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_0%,rgba(255,255,255,.18),transparent_22rem),radial-gradient(circle_at_80%_14%,rgba(96,165,250,.26),transparent_28rem),radial-gradient(circle_at_52%_88%,rgba(219,234,254,.13),transparent_32rem),linear-gradient(180deg,#07111f_0%,#0b1c33_43%,#061020_100%)]" />
-        <div className="absolute -left-28 top-6 h-[30rem] w-[30rem] rounded-full bg-white/8 blur-[105px] omni-float-slow" />
-        <div className="absolute right-[-10rem] top-[18%] h-[34rem] w-[34rem] rounded-full bg-blue-400/18 blur-[120px] omni-float-medium" />
-        <div className="absolute bottom-[-14rem] left-[8%] h-[30rem] w-[30rem] rounded-full bg-white/8 blur-[130px] omni-float-fast" />
-      </div>
+    <main className="min-h-screen overflow-x-hidden bg-[linear-gradient(135deg,#26107a_0%,#123cff_38%,#eef5ff_100%)] text-slate-950">
+      <div className="mx-auto max-w-3xl bg-[#f8faff] shadow-[0_34px_120px_rgba(15,23,42,.28)] md:my-8 md:overflow-hidden md:rounded-[2.2rem]">
+        <StoreNavbar />
 
-      <StoreNavbar cartCount={totalItems} onCartToggle={openCart} />
+        <nav className="sticky top-0 z-20 flex gap-8 overflow-x-auto border-b border-slate-100 bg-white px-7 text-[15px] font-semibold text-slate-800 [scrollbar-width:none]">
+          {CATEGORY_LABELS.map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setSelectedCategory(item)}
+              className={`relative shrink-0 py-4 transition ${selectedCategory === item ? 'text-blue-600' : 'text-slate-700 hover:text-blue-600'}`}
+            >
+              {item}
+              {selectedCategory === item ? <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-blue-600" /> : null}
+            </button>
+          ))}
+        </nav>
 
-      <section className="relative z-10 px-5 pb-10 pt-7 md:px-8 md:pt-10">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid items-center gap-8 md:grid-cols-[0.94fr_1.06fr] md:gap-12">
-            <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-white/16 bg-white/[0.07] px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-blue-100/85 backdrop-blur-xl">
-                <Sparkles className="h-3.5 w-3.5" /> Omnifix Store
-              </p>
-              <h1 className="mt-5 max-w-2xl text-[clamp(42px,11vw,92px)] font-black leading-[0.88] tracking-[-0.085em] text-white">
-                Tecnología premium para comprar hoy.
-              </h1>
-              <p className="mt-5 max-w-xl text-[15px] leading-8 text-blue-50/68 md:text-base">
-                Explora productos tecnológicos, abre cada ficha, revisa detalles y compra con una experiencia limpia tipo app.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <a href="#catalogo" className="inline-flex h-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,#f8fbff,#a6c8ff_48%,#2563eb)] px-7 text-sm font-black uppercase tracking-[0.16em] text-[#061326] shadow-[0_18px_44px_rgba(37,99,235,.28)] transition hover:-translate-y-0.5">
-                  Ver catálogo
-                </a>
-                <button onClick={openCart} className="inline-flex h-14 items-center justify-center gap-2 rounded-full border border-white/14 bg-white/[0.07] px-7 text-sm font-black uppercase tracking-[0.16em] text-white/90 backdrop-blur transition hover:bg-white/[0.13]">
-                  <ShoppingBag className="h-4 w-4" /> Carrito
-                </button>
-              </div>
+        <section className="px-5 pb-28 pt-5 md:px-7">
+          <div className="relative overflow-hidden rounded-[1.6rem] bg-[linear-gradient(135deg,#06104a_0%,#1c23db_48%,#095cff_100%)] px-7 py-7 text-white shadow-[0_18px_38px_rgba(37,99,235,.24)] sm:px-9">
+            <div className="absolute -right-10 bottom-0 top-3 w-[54%] opacity-95">
+              <img src="https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=1000&auto=format&fit=crop" alt="Notebook Omnifix" className="h-full w-full rounded-l-[2rem] object-cover object-center mix-blend-screen" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(255,255,255,.24),transparent_45%),linear-gradient(90deg,#06104a_0%,transparent_55%)]" />
             </div>
-
-            <div className="relative min-h-[300px] md:min-h-[480px]">
-              <div className="absolute inset-0 rounded-[3.25rem] bg-[radial-gradient(circle_at_38%_18%,rgba(255,255,255,.30),transparent_18rem),radial-gradient(circle_at_80%_80%,rgba(37,99,235,.24),transparent_22rem)] blur-2xl" />
-              <div className="relative min-h-[300px] overflow-hidden rounded-[2.6rem] shadow-[0_34px_110px_rgba(0,0,0,.32)] md:min-h-[480px]">
-                <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=1400&auto=format&fit=crop" alt="Computador premium Omnifix" className="h-full min-h-[300px] w-full object-cover opacity-90 md:min-h-[480px]" />
-                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,17,31,.08),transparent_45%,rgba(255,255,255,.14)),linear-gradient(0deg,rgba(7,17,31,.28),transparent_45%)]" />
-              </div>
+            <div className="relative max-w-[58%]">
+              <p className="inline-flex rounded-full bg-white/12 px-3 py-1 text-[10px] font-black uppercase tracking-[0.20em] text-blue-100">Bienvenido a Omnifix</p>
+              <h1 className="mt-4 text-[34px] font-black leading-[0.96] tracking-[-0.04em] sm:text-5xl">Hasta 30% de descuento</h1>
+              <p className="mt-3 max-w-xs text-sm font-medium leading-5 text-white/82 sm:text-base">Ofertas en tecnología seleccionada.</p>
+              <a href="#catalogo" className="mt-5 inline-flex h-12 items-center gap-3 rounded-2xl bg-white px-5 text-sm font-black text-slate-950 shadow-[0_12px_24px_rgba(255,255,255,.18)] transition active:scale-95">
+                Comprar ahora <ArrowRight className="h-4 w-4 text-blue-600" />
+              </a>
+            </div>
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">
+              <span className="h-2 w-7 rounded-full bg-white" />
+              <span className="h-2 w-2 rounded-full bg-white/35" />
+              <span className="h-2 w-2 rounded-full bg-white/35" />
             </div>
           </div>
 
-          <div className="h-16 md:h-20" />
+          <div className="mt-5 flex items-center justify-between rounded-[1.25rem] bg-white px-5 py-4 shadow-[0_12px_30px_rgba(15,23,42,.06)] ring-1 ring-slate-100">
+            <button type="button" className="flex items-center gap-3 text-[15px] font-semibold text-slate-800"><SlidersHorizontal className="h-5 w-5" /> Filtrar <ChevronDown className="h-4 w-4" /></button>
+            <span className="h-7 w-px bg-slate-200" />
+            <button type="button" className="flex items-center gap-3 text-[15px] font-semibold text-slate-800"><TrendingUp className="h-5 w-5" /> Ordenar: Popular <ChevronDown className="h-4 w-4" /></button>
+          </div>
 
-          <section id="catalogo" className="relative">
-            <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.30em] text-blue-100/58">Catálogo Omnifix</p>
-                <h2 className="mt-2 text-4xl font-black tracking-[-0.06em] text-white md:text-6xl">Productos</h2>
-              </div>
-              <label className="relative block w-full md:max-w-md">
-                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-blue-100/66" />
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar producto..." className="h-14 w-full rounded-full border border-white/10 bg-white/[0.075] pl-12 pr-4 text-sm font-bold text-white outline-none backdrop-blur-xl placeholder:text-white/35 focus:border-blue-200/45 focus:bg-white/[0.12]" />
-              </label>
-            </div>
+          <label id="catalogo" className="mt-5 flex h-12 items-center gap-3 rounded-[1.15rem] bg-white px-4 shadow-[0_10px_24px_rgba(15,23,42,.05)] ring-1 ring-slate-100">
+            <Search className="h-5 w-5 text-slate-400" />
+            <input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Buscar producto..." className="h-full min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400" />
+          </label>
 
-            <div className="mb-6 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-              {categories.map((item) => (
-                <button key={item} onClick={() => setSelectedCategory(item)} className={`shrink-0 rounded-full px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] transition ${selectedCategory === item ? 'bg-white text-blue-700 shadow-[0_12px_30px_rgba(255,255,255,.13)]' : 'bg-white/[0.065] text-white/58 backdrop-blur-xl hover:bg-white/[0.10] hover:text-white'}`}>
-                  {item}
-                </button>
-              ))}
-            </div>
+          <div className="mt-5 grid grid-cols-2 gap-4">
+            {filtered.map((p) => <ProductCard key={p.id} product={p} onAdd={() => addToCart(toCart(p))} />)}
+          </div>
+          {filtered.length === 0 ? <p className="mt-8 rounded-[1.4rem] bg-white p-8 text-center text-sm font-bold text-slate-500 shadow-sm">No encontré productos con esa búsqueda.</p> : null}
+        </section>
 
-            <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {filtered.map((p) => <ProductCard key={p.id} product={p} onAdd={() => addToCart(toCart(p))} />)}
-            </div>
-            {filtered.length === 0 && <p className="mt-8 rounded-[1.7rem] bg-white/[0.07] p-8 text-center text-sm font-bold text-white/56 backdrop-blur-xl">No encontré productos con esa búsqueda.</p>}
-          </section>
-        </div>
-      </section>
-
-      <StoreFooter />
+        <StoreFooter />
+        <BottomNav totalItems={totalItems} openCart={openCart} />
+      </div>
     </main>
   );
 }
@@ -163,29 +164,40 @@ function ProductCard({ product, onAdd }: { product: Product; onAdd: () => void }
   const ok = product.shopifyVariantId?.startsWith('gid://shopify/ProductVariant/');
 
   return (
-    <article className="group relative">
+    <article className="overflow-hidden rounded-[1.2rem] bg-white shadow-[0_12px_26px_rgba(15,23,42,.06)] ring-1 ring-slate-100">
       <Link href={href(product)} className="block">
-        <div className="relative aspect-[1/1.06] overflow-hidden rounded-[1.65rem] bg-white/[0.06] shadow-[0_20px_54px_rgba(0,0,0,.22)]">
-          <img src={image(product)} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#061020]/88 via-[#061020]/10 to-transparent" />
-          {pct(product) > 0 ? <span className="absolute left-2.5 top-2.5 rounded-full bg-white px-2.5 py-1 text-[9px] font-black text-blue-700">-{pct(product)}%</span> : null}
-          <span className="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-[#07111f]/64 px-2.5 py-1 text-[10px] font-bold text-blue-50 backdrop-blur-xl"><Star className="h-3 w-3 fill-blue-100 text-blue-100" /> {product.rating || 5}.0</span>
+        <div className="relative aspect-square bg-[#f3f4f7]">
+          <img src={image(product)} alt={product.name} className="h-full w-full object-contain p-4 transition duration-500 hover:scale-105" />
+          <button type="button" aria-label="Favorito" className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/80 text-slate-500 backdrop-blur"><Heart className="h-5 w-5" /></button>
+          {pct(product) > 0 ? <span className="absolute left-3 top-3 rounded-full bg-white px-2 py-1 text-[10px] font-black text-blue-600 shadow-sm">-{pct(product)}%</span> : null}
         </div>
-        <div className="px-1.5 pt-3">
-          <p className="text-[8px] font-black uppercase tracking-[0.20em] text-blue-100/52">{category(product)}</p>
-          <h3 className="mt-1.5 line-clamp-2 min-h-[2.4rem] text-sm font-black leading-tight text-white sm:text-[15px]">{product.name}</h3>
-          <p className="mt-2 text-lg font-black tracking-[-0.03em] text-white">{clp(final(product))}</p>
+        <div className="px-4 pb-3 pt-4">
+          <h3 className="line-clamp-2 min-h-[2.6rem] text-[15px] font-black leading-tight text-slate-950">{product.name}</h3>
+          <p className="mt-1 line-clamp-1 text-[13px] font-medium text-slate-500">{labelFor(product)}</p>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <p className="text-[17px] font-black tracking-[-0.03em] text-slate-950">{clp(final(product))}</p>
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500"><Star className="h-3.5 w-3.5 fill-blue-600 text-blue-600" /> {product.rating || 4.8}</span>
+          </div>
         </div>
       </Link>
-
-      <div className="mt-3 grid grid-cols-[1fr_44px] gap-2 px-1.5">
-        <button onClick={onAdd} disabled={needsShopifyVariant && !ok} className="flex h-11 items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#f8fbff,#93bdff_50%,#2563eb)] text-[10px] font-black uppercase tracking-[0.14em] text-[#061326] shadow-[0_14px_32px_rgba(37,99,235,.28)] transition hover:-translate-y-0.5 disabled:opacity-45">
-          <ShoppingBag className="h-3.5 w-3.5" /> Añadir
+      <div className="px-4 pb-4">
+        <button onClick={onAdd} disabled={needsShopifyVariant && !ok} className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-600 bg-white text-sm font-black text-blue-600 transition hover:bg-blue-600 hover:text-white disabled:opacity-45">
+          <ShoppingBag className="h-4 w-4" /> Añadir
         </button>
-        <Link href={href(product)} aria-label={`Comprar ${product.name}`} className="grid h-11 place-items-center rounded-full bg-white/[0.075] text-white/82 backdrop-blur-xl transition hover:bg-white/[0.13]">
-          <CreditCard className="h-4 w-4" />
-        </Link>
       </div>
     </article>
+  );
+}
+
+function BottomNav({ totalItems, openCart }: { totalItems: number; openCart: () => void }) {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-3xl px-4 pb-3 md:bottom-8 md:px-8">
+      <div className="grid grid-cols-4 rounded-t-[1.8rem] rounded-b-[1.4rem] bg-white/95 px-5 py-3 text-slate-500 shadow-[0_-14px_40px_rgba(15,23,42,.10)] backdrop-blur-2xl ring-1 ring-slate-100">
+        <Link href="/" className="flex flex-col items-center gap-1 text-blue-600"><Home className="h-6 w-6 fill-blue-600/10" /><span className="text-xs font-bold">Inicio</span></Link>
+        <a href="#catalogo" className="flex flex-col items-center gap-1"><Grid2X2 className="h-6 w-6" /><span className="text-xs font-bold">Categorías</span></a>
+        <button type="button" onClick={openCart} className="relative flex flex-col items-center gap-1"><ShoppingBag className="h-6 w-6" />{totalItems > 0 ? <span className="absolute -top-2 right-[26%] grid h-5 min-w-5 place-items-center rounded-full bg-blue-600 px-1 text-[10px] font-black text-white">{totalItems}</span> : null}<span className="text-xs font-bold">Carrito</span></button>
+        <Link href="/auth" className="flex flex-col items-center gap-1"><User className="h-6 w-6" /><span className="text-xs font-bold">Cuenta</span></Link>
+      </div>
+    </nav>
   );
 }
