@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createShopifyCheckoutCart, isShopifyConfigured, type ShopifyCartLineInput } from '@/lib/shopify';
+import { createShopifyCheckoutCart, isShopifyRuntimeConfigured, type ShopifyCartLineInput } from '@/lib/shopifyRuntime';
 import { getClientIp } from '@/lib/adminAuth';
 import { checkPersistentRateLimit } from '@/lib/adminRateLimitStore';
 import { campaignBusyHeaders, getCampaignMode, publicCheckoutEnabled } from '@/lib/campaignMode';
@@ -76,9 +76,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!isShopifyConfigured()) {
+    if (!(await isShopifyRuntimeConfigured())) {
       return NextResponse.json(
-        { error: 'Shopify checkout no está configurado. Define SHOPIFY_STORE_DOMAIN y SHOPIFY_STOREFRONT_ACCESS_TOKEN.' },
+        { error: 'Shopify checkout no está configurado. Conecta Shopify en /admin/integraciones/shopify o define SHOPIFY_STORE_DOMAIN y SHOPIFY_STOREFRONT_ACCESS_TOKEN.' },
         { status: 503 },
       );
     }
