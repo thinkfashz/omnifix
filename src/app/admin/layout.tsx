@@ -5,8 +5,8 @@ import AdminColombiaGradientBackground from '@/components/admin/visual/AdminColo
 import './fabrick-admin-theme.css';
 
 export const metadata: Metadata = {
-  title: 'Admin | Fabrick',
-  description: 'Panel de administración Fabrick',
+  title: 'Admin | Omnifix',
+  description: 'Panel de administración Omnifix',
 };
 
 export const dynamic = 'force-dynamic';
