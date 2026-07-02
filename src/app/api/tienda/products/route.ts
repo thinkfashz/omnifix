@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getShopifyCatalogProducts, isShopifyConfigured } from '@/lib/shopify';
+import { getShopifyCatalogProducts, isShopifyRuntimeConfigured } from '@/lib/shopifyRuntime';
 
 export const runtime = 'nodejs';
 export const revalidate = 60;
@@ -17,20 +17,18 @@ function catalogResponse(payload: Record<string, unknown>, status = 200) {
 
 export async function GET() {
   try {
-    if (!isShopifyConfigured()) {
+    if (!(await isShopifyRuntimeConfigured())) {
       return catalogResponse(
         {
           products: [],
           total: 0,
           source: 'shopify',
-          error: 'Shopify no está configurado. Define SHOPIFY_STORE_DOMAIN y SHOPIFY_STOREFRONT_ACCESS_TOKEN.',
+          error: 'Shopify no está configurado. Conecta Shopify en /admin/integraciones/shopify o define SHOPIFY_STORE_DOMAIN y SHOPIFY_STOREFRONT_ACCESS_TOKEN.',
         },
         503,
       );
     }
 
-    // Shopify manda en productos, precios, stock y variantes.
-    // InsForge queda libre para leads, cotizaciones, páginas, analítica, campañas y etiquetas internas.
     const products = await getShopifyCatalogProducts(200);
 
     return catalogResponse({
@@ -38,7 +36,7 @@ export async function GET() {
       total: products.length,
       source: 'shopify',
       checkout: 'shopify',
-      omnifix_role: 'Diseño, landing, campañas, cotizaciones, CRM, IA y páginas personalizadas.',
+      omnifix_role: 'Diseño, landing, campañas, consultas, CRM, IA y páginas personalizadas.',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'No se pudieron cargar productos desde Shopify.';
