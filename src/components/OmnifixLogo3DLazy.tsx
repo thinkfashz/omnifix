@@ -1,3 +1,3 @@
 'use client';
 
-export { default } from './FabrickLogo3DLazy';
+export { default } from './Omnifix3DTextLogo';
