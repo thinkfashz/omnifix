@@ -1,5 +1,6 @@
 'use client';
 
+import type { FormEvent } from 'react';
 import { useMemo, useState } from 'react';
 import { MessageCircle, Star } from 'lucide-react';
 
@@ -16,7 +17,7 @@ export default function ProductComments({ productName }: { productName?: string 
   const [text, setText] = useState('');
   const score = useMemo(() => comments.length ? (comments.reduce((sum, item) => sum + item.rating, 0) / comments.length).toFixed(1) : '5.0', [comments]);
 
-  function submit(event: React.FormEvent<HTMLFormElement>) {
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!name.trim() || !text.trim()) return;
     setComments([{ name: name.trim(), rating: 5, text: text.trim(), date: 'Ahora' }, ...comments]);
