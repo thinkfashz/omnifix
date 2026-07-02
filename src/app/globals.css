@@ -158,8 +158,51 @@ html[data-tenant-theme='ready'] .tenant-border {
 .omni-float-medium { animation: omniFloatMedium 10.5s ease-in-out infinite; }
 .omni-float-fast { animation: omniFloatFast 8.5s ease-in-out infinite; }
 
+.bg-itcolor-gradient {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(127, 58, 161, 0.95), transparent 28%),
+    radial-gradient(circle at 82% 82%, rgba(84, 22, 181, 0.90), transparent 30%),
+    linear-gradient(135deg, #0C0516 0%, #0F083B 42%, #5416B5 75%, #7F3AA1 100%);
+}
+
+@keyframes itcolorFloatSlow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(18px, 12px, 0) scale(1.05); }
+}
+
+@keyframes itcolorFloatSlower {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-16px, -10px, 0) scale(1.08); }
+}
+
+@keyframes itcolorWaveOne {
+  0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: .72; }
+  50% { transform: translate(-50%, -50%) scale(1.08) rotate(2deg); opacity: .92; }
+}
+
+@keyframes itcolorWaveTwo {
+  0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: .35; }
+  50% { transform: translate(-50%, -50%) scale(1.12) rotate(-3deg); opacity: .55; }
+}
+
+@keyframes itcolorWaveThree {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: .18; }
+  50% { transform: translate(-50%, -50%) scale(1.05); opacity: .28; }
+}
+
+.animate-itcolor-float-slow { animation: itcolorFloatSlow 10s ease-in-out infinite; }
+.animate-itcolor-float-slower { animation: itcolorFloatSlower 14s ease-in-out infinite; }
+.animate-itcolor-wave-one { animation: itcolorWaveOne 8s ease-in-out infinite; }
+.animate-itcolor-wave-two { animation: itcolorWaveTwo 11s ease-in-out infinite; }
+.animate-itcolor-wave-three { animation: itcolorWaveThree 15s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .omni-float-slow,
   .omni-float-medium,
-  .omni-float-fast { animation: none; }
+  .omni-float-fast,
+  .animate-itcolor-float-slow,
+  .animate-itcolor-float-slower,
+  .animate-itcolor-wave-one,
+  .animate-itcolor-wave-two,
+  .animate-itcolor-wave-three { animation: none; }
 }
