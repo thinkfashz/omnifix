@@ -25,8 +25,8 @@ export default function OmnifixAdminModulesPage() {
             <div className="rounded-[1.8rem] border border-blue-400/20 bg-black/45 p-5">
               <Gauge className="h-8 w-8 text-blue-300" />
               <p className="mt-4 text-sm text-zinc-400">Estado recomendado</p>
-              <b className="mt-1 block text-2xl text-white">Listo para Vercel</b>
-              <p className="mt-2 text-sm leading-6 text-zinc-500">Configura las variables `.env` indicadas y conecta InsForge para persistencia.</p>
+              <b className="mt-1 block text-2xl text-white">Listo para Cloudflare</b>
+              <p className="mt-2 text-sm leading-6 text-zinc-500">Configura las variables indicadas en Cloudflare y conecta InsForge para persistencia.</p>
             </div>
           </div>
         </div>

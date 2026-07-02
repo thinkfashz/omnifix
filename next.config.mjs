@@ -37,8 +37,10 @@ function isKnownSentryInstrumentationWarning(warning = {}) {
   );
 }
 
+const isCloudflareBuild = process.env.CF_PAGES === '1' || process.env.CLOUDFLARE === '1' || process.env.OPENNEXT_CLOUDFLARE === '1';
+
 const nextConfig = {
-  ...(process.platform === 'win32' ? {} : { output: 'standalone' }),
+  ...(process.platform === 'win32' || isCloudflareBuild ? {} : { output: 'standalone' }),
   // Vercel was failing with OOM after compilation while running the full lint
   // phase. Keep lint available through `pnpm lint`, but do not run it inside
   // `next build` so production deploys finish within the build container RAM.

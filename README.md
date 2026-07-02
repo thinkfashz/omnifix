@@ -27,9 +27,13 @@ Luego abre:
 http://localhost:3000
 ```
 
-## Variables en Vercel
+## Despliegue en Cloudflare
 
-Revisa `OMNIFIX_ENV_VERCEL.md` y configura las variables en Vercel antes de producción.
+Revisa `CLOUDFLARE_DEPLOY.md` para conectar el repo a Cloudflare Pages con OpenNext.
+
+## Variables de entorno
+
+Revisa `CLOUDFLARE_DEPLOY.md` y `.env.example` antes de producción. No subas secretos reales a GitHub.
 
 ## Rutas principales
 

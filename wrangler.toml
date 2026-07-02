@@ -1,0 +1,13 @@
+name = "omnifix"
+main = ".open-next/worker.js"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+assets = { directory = ".open-next/assets", binding = "ASSETS" }
+
+[observability]
+enabled = true
+
+[vars]
+NEXT_PUBLIC_WHATSAPP_NUMBER = "56930121625"
+NEXT_PUBLIC_SENTRY_ENV = "production"
