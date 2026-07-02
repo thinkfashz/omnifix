@@ -34,7 +34,7 @@ export default function OmnifixHomeExperience() {
   const filtered = useMemo(() => { const q = query.trim().toLowerCase(); return liveProducts.filter((product) => (activeCategory === 'Todo' || category(product) === activeCategory) && (!q || `${product.name} ${product.description || ''} ${category(product)}`.toLowerCase().includes(q))); }, [activeCategory, liveProducts, query]);
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#0f5bff] text-white">
+    <main className="min-h-screen overflow-hidden bg-[#0f5bff] text-white" data-omnifix-flow="product-card-detail-checkout">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,.28),transparent_30rem),radial-gradient(circle_at_80%_100%,rgba(34,211,238,.20),transparent_34rem)]" />
       <section className="relative mx-auto max-w-7xl px-4 pt-5 md:px-8">
         <header className="flex items-center justify-center py-2">
