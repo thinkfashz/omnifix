@@ -6,7 +6,7 @@ import './responsive-safety.css';
 import './remove-obsolete-sections.css';
 import InstallAppPrompt from '@/components/InstallAppPrompt';
 import SmoothScrollProvider from '@/components/SmoothScrollProvider';
-import SplashScreen from '@/components/SplashScreen';
+import OmnifixSplashScreen from '@/components/OmnifixSplashScreen';
 
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'Omnifix' }],
   openGraph: {
-    title: 'Omnifix | Todo tiene una solución',
+    title: 'Omnifix | Tecnología, automatización y comercio inteligente',
     description:
       'Tienda tecnológica, ecommerce, smart home, redes, POS y soporte para clientes y negocios en Chile.',
     url: 'https://omnifix.cl',
@@ -110,13 +110,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: 'cover',
-  themeColor: '#0f1bff',
+  themeColor: '#2563EB',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Pre-fetch the sections that are needed on every page so the SiteConfig
-  // provider hydrates flicker-free. Other sections lazy-load via
-  // `useSiteContent` when their consumers mount.
   const [navMenu, globalStyles] = await Promise.all([
     getSiteSection('nav-menu'),
     getSiteSection('global-styles'),
@@ -131,7 +128,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <CustomInjectionRoot slot="head" />
       </head>
       <body className="bg-black text-white antialiased app-shell">
-        <SplashScreen />
+        <OmnifixSplashScreen />
         <SiteConfigProvider initial={{ 'nav-menu': navMenu, 'global-styles': globalStyles }}>
           <ThemeProvider>
             <AuthProvider>
@@ -144,10 +141,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <TenantBrandingBar />
                   <ServiceWorkerRegister />
                   <InstallAppPrompt />
-                  {/* AIAgentChat reemplaza al botón flotante de WhatsApp en
-                      las páginas públicas. El visitante puede igualmente
-                      saltar a WhatsApp desde el botón "Hablar con humano"
-                      dentro del propio chat o desde los CTAs del Hero. */}
                   <AIAgentChat hideOn={['/admin', '/auth', '/checkout', '/presupuestos', '/p/']} />
                   <Analytics />
                   <CmsRealtimeListener />
