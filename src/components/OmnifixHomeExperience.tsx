@@ -2,10 +2,10 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Search, ShoppingBag, Star, Zap } from 'lucide-react';
+import FabrickLogo from '@/components/FabrickLogo';
 import { useCatalogProducts } from '@/hooks/useCatalogProducts';
 import { useCartContext } from '@/context/CartContext';
 
@@ -41,7 +41,9 @@ export default function OmnifixHomeExperience() {
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,.30),transparent_30rem),radial-gradient(circle_at_80%_100%,rgba(34,211,238,.22),transparent_34rem)]" />
       <section className="relative mx-auto max-w-7xl px-4 pt-5 md:px-8">
         <header className="relative flex items-center justify-center md:justify-between">
-          <Link href="/" className="flex items-center gap-3 text-center md:text-left"><span className="relative grid h-16 w-16 overflow-hidden rounded-[1.35rem] bg-white shadow-[0_12px_40px_rgba(0,0,0,.20)] md:h-12 md:w-12"><Image src="/omnifix-logo.svg" alt="Omnifix" fill sizes="64px" className="object-cover" priority /></span><span><b className="block text-sm font-black uppercase tracking-[.28em]">OMNIFIX</b><small className="text-xs text-blue-100/80">Tienda tecnológica</small></span></Link>
+          <Link href="/" className="flex items-center justify-center text-center md:justify-start md:text-left">
+            <FabrickLogo className="pointer-events-none" />
+          </Link>
           <div className="hidden gap-2 md:flex"><Link href="/auth" className="rounded-full border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-[.16em] text-white">Cuenta</Link><button onClick={openCart} className="relative rounded-full bg-white px-5 py-3 text-xs font-black uppercase tracking-[.16em] text-blue-700">Carrito{totalItems > 0 && <span className="ml-2 rounded-full bg-cyan-200 px-2 py-0.5 text-blue-950">{totalItems}</span>}</button></div>
         </header>
 
