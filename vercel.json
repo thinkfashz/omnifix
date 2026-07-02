@@ -1,7 +1,7 @@
 {
   "framework": "nextjs",
-  "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm build",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
   "crons": [
     { "path": "/api/cron/system-health", "schedule": "0 0 * * *" },
     { "path": "/api/cron/newsletter", "schedule": "0 13 * * *" },
