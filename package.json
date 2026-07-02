@@ -2,7 +2,7 @@
   "name": "omnifix",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "npm@11.6.4",
   "engines": {
     "node": "24.x"
   },
