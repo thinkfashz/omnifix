@@ -1,14 +1,17 @@
 /**
  * playwright-agent.ts
  * Helpers for headless browser automation used by the AI Agent page.
- * Each call launches a fresh Chromium instance (stateless / serverless-safe).
+ *
+ * Playwright cannot run inside the Cloudflare Workers runtime and its bundled
+ * dependencies break OpenNext/esbuild. Keep the import hidden behind a runtime
+ * loader so Cloudflare can deploy while Node/VPS environments can still use it.
  */
 
 export interface BrowseResult {
   url: string;
   title: string;
   text: string;          // cleaned page text (max 6 000 chars)
-  screenshot: string;    // base64 PNG data URI
+  screenshot: string;    // base64 image data URI
   error?: string;
 }
 
@@ -33,14 +36,34 @@ function cleanText(raw: string): string {
     .slice(0, MAX_TEXT);
 }
 
+function isCloudflareLikeRuntime() {
+  return Boolean(
+    process.env.CF_PAGES === '1' ||
+    process.env.CLOUDFLARE === '1' ||
+    process.env.OPENNEXT_CLOUDFLARE === '1' ||
+    process.env.NEXT_RUNTIME === 'edge',
+  );
+}
+
+async function loadPlaywright(): Promise<{ chromium: any }> {
+  if (isCloudflareLikeRuntime()) {
+    throw new Error('Playwright está deshabilitado en Cloudflare Workers. Usa SERPER_API_KEY para búsquedas sin navegador o ejecuta navegación visual en Node/VPS.');
+  }
+
+  // Avoid a static import('playwright') so OpenNext/esbuild does not bundle
+  // playwright-core into the Cloudflare worker.
+  const dynamicImport = new Function('specifier', 'return import(specifier)') as (specifier: string) => Promise<{ chromium: any }>;
+  return dynamicImport('playwright');
+}
+
 /**
  * Navigate to a URL with a headless Chromium browser.
  * Returns page title, cleaned text content, and a base64 screenshot.
  */
 export async function browsePage(url: string): Promise<BrowseResult> {
-  let browser: import('playwright').Browser | null = null;
+  let browser: any = null;
   try {
-    const { chromium } = await import('playwright');
+    const { chromium } = await loadPlaywright();
     browser = await chromium.launch({
       headless: true,
       args: [
@@ -61,7 +84,7 @@ export async function browsePage(url: string): Promise<BrowseResult> {
     const page = await ctx.newPage();
 
     // Block heavy resources for speed
-    await page.route('**/*', (route) => {
+    await page.route('**/*', (route: any) => {
       if (BLOCK_TYPES.has(route.request().resourceType())) {
         route.abort().catch(() => null);
       } else {
@@ -98,8 +121,9 @@ export async function browsePage(url: string): Promise<BrowseResult> {
 }
 
 /**
- * Search the web using Serper.dev (if API key configured) or
- * a simple DuckDuckGo HTML scrape via Playwright as fallback.
+ * Search the web using Serper.dev if API key is configured.
+ * Cloudflare cannot run Playwright, so the DuckDuckGo browser fallback is only
+ * available in Node/VPS environments.
  */
 export async function searchWeb(
   query: string,
@@ -135,14 +159,22 @@ export async function searchWeb(
     } catch { /* fall through */ }
   }
 
-  // Fallback: DuckDuckGo HTML scrape via Playwright
+  if (isCloudflareLikeRuntime()) {
+    return {
+      ok: false,
+      results: [],
+      error: 'Búsqueda sin SERPER_API_KEY no disponible en Cloudflare porque Playwright/Chromium no puede ejecutarse en Workers.',
+    };
+  }
+
+  // Fallback: DuckDuckGo HTML scrape via Playwright, Node/VPS only.
   return searchViaDDG(query);
 }
 
 async function searchViaDDG(query: string): Promise<SearchResult> {
-  let browser: import('playwright').Browser | null = null;
+  let browser: any = null;
   try {
-    const { chromium } = await import('playwright');
+    const { chromium } = await loadPlaywright();
     browser = await chromium.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process', '--ignore-certificate-errors'],
