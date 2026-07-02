@@ -1,14 +1,14 @@
-/* Fabrick Admin Theme — single source of truth for /admin */
+/* Omnifix Admin Theme — single source of truth for /admin */
 :root {
-  --fabrick-bg: #050505;
-  --fabrick-panel: rgba(10, 10, 10, 0.62);
-  --fabrick-panel-strong: rgba(5, 5, 5, 0.84);
-  --fabrick-border: rgba(255, 255, 255, 0.12);
-  --fabrick-gold: #facc15;
-  --fabrick-amber: #d6a52f;
-  --fabrick-silver: #c8c8c8;
-  --fabrick-text: #f8f5ee;
-  --fabrick-muted: rgba(248, 245, 238, .62);
+  --fabrick-bg: #020617;
+  --fabrick-panel: rgba(15, 23, 42, 0.62);
+  --fabrick-panel-strong: rgba(2, 6, 23, 0.86);
+  --fabrick-border: rgba(147, 197, 253, 0.16);
+  --fabrick-gold: #3b82f6;
+  --fabrick-amber: #38bdf8;
+  --fabrick-silver: #bfdbfe;
+  --fabrick-text: #f8fbff;
+  --fabrick-muted: rgba(219, 234, 254, .66);
 }
 
 html, body { max-width: 100%; overflow-x: hidden; background: var(--fabrick-bg); }
@@ -20,9 +20,9 @@ body { color: var(--fabrick-text); }
   width: 100%;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 12% 0%, rgba(250,204,21,.12), transparent 26rem),
-    radial-gradient(circle at 92% 12%, rgba(255,255,255,.08), transparent 24rem),
-    linear-gradient(180deg, #080808 0%, #050505 52%, #020202 100%);
+    radial-gradient(circle at 12% 0%, rgba(37,99,235,.20), transparent 26rem),
+    radial-gradient(circle at 92% 12%, rgba(34,211,238,.13), transparent 24rem),
+    linear-gradient(180deg, #020617 0%, #050816 52%, #020617 100%);
   isolation: isolate;
 }
 
@@ -32,8 +32,8 @@ body { color: var(--fabrick-text); }
   inset: 0;
   z-index: -3;
   background:
-    linear-gradient(120deg, rgba(250,204,21,.08), transparent 36%, rgba(255,255,255,.045) 58%, transparent),
-    radial-gradient(circle at 50% 100%, rgba(214,165,47,.08), transparent 34rem);
+    linear-gradient(120deg, rgba(59,130,246,.12), transparent 36%, rgba(255,255,255,.045) 58%, transparent),
+    radial-gradient(circle at 50% 100%, rgba(34,211,238,.11), transparent 34rem);
 }
 
 .sf-admin-colombia-bg::after {
@@ -43,7 +43,7 @@ body { color: var(--fabrick-text); }
   z-index: -1;
   background:
     radial-gradient(circle at 20% 0%, rgba(255,255,255,.07), transparent 28rem),
-    linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.60));
+    linear-gradient(180deg, rgba(2,6,23,.08), rgba(2,6,23,.62));
   pointer-events: none;
 }
 
@@ -51,7 +51,7 @@ body { color: var(--fabrick-text); }
   position: fixed;
   inset: -12%;
   z-index: -2;
-  opacity: .30;
+  opacity: .34;
   pointer-events: none;
   filter: blur(56px);
 }
@@ -65,9 +65,9 @@ body { color: var(--fabrick-text); }
   border-radius: 9999px;
   opacity: .42;
 }
-.sf-admin-blob-1 { background: radial-gradient(circle, rgba(250,204,21,.34) 0%, rgba(250,204,21,0) 58%); transform: translate(-78%, -60%); }
-.sf-admin-blob-2 { background: radial-gradient(circle, rgba(255,255,255,.20) 0%, rgba(255,255,255,0) 60%); transform: translate(-18%, -72%); }
-.sf-admin-blob-3 { background: radial-gradient(circle, rgba(214,165,47,.20) 0%, rgba(214,165,47,0) 58%); transform: translate(-15%, -15%); }
+.sf-admin-blob-1 { background: radial-gradient(circle, rgba(37,99,235,.42) 0%, rgba(37,99,235,0) 58%); transform: translate(-78%, -60%); }
+.sf-admin-blob-2 { background: radial-gradient(circle, rgba(125,211,252,.22) 0%, rgba(125,211,252,0) 60%); transform: translate(-18%, -72%); }
+.sf-admin-blob-3 { background: radial-gradient(circle, rgba(59,130,246,.24) 0%, rgba(59,130,246,0) 58%); transform: translate(-15%, -15%); }
 .sf-admin-blob-4 { display: none; }
 .sf-admin-blob-5 { display: none; }
 .sf-admin-colombia-content { position: relative; z-index: 1; min-height: 100dvh; }
@@ -80,23 +80,31 @@ img, video, canvas, svg, iframe { max-width: 100%; }
 table { border-collapse: collapse; }
 .overflow-x-auto { max-width: 100%; }
 
-input, textarea, select { color: var(--fabrick-text); background: rgba(0, 0, 0, .35); border-color: rgba(255, 255, 255, .12); }
-input:focus, textarea:focus, select:focus { outline: none; border-color: rgba(250, 204, 21, .74) !important; box-shadow: 0 0 0 4px rgba(250, 204, 21, .09); }
+input, textarea, select { color: var(--fabrick-text); background: rgba(2, 6, 23, .40); border-color: rgba(147, 197, 253, .16); }
+input:focus, textarea:focus, select:focus { outline: none; border-color: rgba(59, 130, 246, .78) !important; box-shadow: 0 0 0 4px rgba(59, 130, 246, .12); }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { touch-action: manipulation; }
 
 .fabrick-card, .fabrick-panel, .glass-card, [class*='bg-black/55'], [class*='bg-black/45'], [class*='bg-zinc-950'], [class*='bg-[#050403]'] {
-  border-color: rgba(250, 204, 21, .13) !important;
-  background-color: rgba(4, 4, 4, .58);
+  border-color: rgba(59, 130, 246, .15) !important;
+  background-color: rgba(2, 6, 23, .62);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
-[class*='rounded-[2rem]'], [class*='rounded-[2.4rem]'], [class*='rounded-[2.6rem]'], .rounded-3xl { box-shadow: 0 24px 90px rgba(0, 0, 0, .34); }
+[class*='rounded-[2rem]'], [class*='rounded-[2.4rem]'], [class*='rounded-[2.6rem]'], .rounded-3xl { box-shadow: 0 24px 90px rgba(2, 6, 23, .38); }
 .fabrick-grid-safe, [class*='grid'] { min-width: 0; }
 .fabrick-scroll-safe { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .fabrick-admin-title { color: var(--fabrick-text); letter-spacing: -0.055em; }
 .fabrick-admin-muted { color: var(--fabrick-muted); }
-.fabrick-admin-button, button[class*='bg-amber-400'], button[class*='bg-yellow'] { box-shadow: 0 16px 40px rgba(250, 204, 21, .16); }
+.fabrick-admin-button, button[class*='bg-amber-400'], button[class*='bg-yellow'] { box-shadow: 0 16px 40px rgba(59, 130, 246, .20); }
+
+.text-yellow-300, .text-yellow-400, .text-yellow-200, .text-yellow-100 { color: #93c5fd !important; }
+.bg-yellow-300, .bg-yellow-400 { background-color: #3b82f6 !important; color: #fff !important; }
+.border-yellow-300, .border-yellow-400 { border-color: rgba(96,165,250,.58) !important; }
+[class*='border-yellow-300'], [class*='border-yellow-400'] { border-color: rgba(96,165,250,.38) !important; }
+[class*='bg-yellow-300/'], [class*='bg-yellow-400/'] { background-color: rgba(37,99,235,.13) !important; }
+[class*='text-yellow-'] { color: #93c5fd !important; }
+[class*='ring-yellow-'] { --tw-ring-color: rgba(59,130,246,.44) !important; }
 
 @media (max-width: 1280px) {
   main > section, main > div, .fabrick-page, .fabrick-container { max-width: calc(100vw - 18px); }
