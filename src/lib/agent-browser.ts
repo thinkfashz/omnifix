@@ -1,13 +1,16 @@
 /**
  * agent-browser.ts
- * Persistent Playwright browser session for the AI agent.
- * The session lives for the duration of one agent request and is shared
- * across all tool calls — navigation state is preserved between actions.
+ * Persistent browser session for the AI agent.
+ *
+ * Playwright cannot run inside the Cloudflare Workers runtime and its bundled
+ * dependencies break OpenNext/esbuild. Keep the import hidden behind a runtime
+ * loader so Cloudflare can deploy while Node/VPS environments can still use it.
  */
 
-import type { Browser, Page } from 'playwright';
-
 export type EmitFn = (event: Record<string, unknown>) => void;
+
+type RuntimeBrowser = { close: () => Promise<void> };
+type RuntimePage = any;
 
 const BROWSER_ARGS = [
   '--no-sandbox',
@@ -27,15 +30,35 @@ function cleanText(raw: string): string {
   return raw.replace(/\s{3,}/g, '\n\n').replace(/\n{4,}/g, '\n\n').trim().slice(0, MAX_TEXT);
 }
 
+function isCloudflareLikeRuntime() {
+  return Boolean(
+    process.env.CF_PAGES === '1' ||
+    process.env.CLOUDFLARE === '1' ||
+    process.env.OPENNEXT_CLOUDFLARE === '1' ||
+    process.env.NEXT_RUNTIME === 'edge',
+  );
+}
+
+async function loadPlaywright(): Promise<{ chromium: any }> {
+  if (isCloudflareLikeRuntime()) {
+    throw new Error('Playwright está deshabilitado en Cloudflare Workers. Usa esta herramienta en Node/VPS o configura SERPER_API_KEY para búsquedas sin navegador.');
+  }
+
+  // Avoid a static import('playwright') so OpenNext/esbuild does not bundle
+  // playwright-core into the Cloudflare worker.
+  const dynamicImport = new Function('specifier', 'return import(specifier)') as (specifier: string) => Promise<{ chromium: any }>;
+  return dynamicImport('playwright');
+}
+
 export class BrowserSession {
-  private _browser!: Browser;
-  private _page!: Page;
+  private _browser!: RuntimeBrowser;
+  private _page!: RuntimePage;
   private _lastAction = '';
   private _frameActive = false;
 
   static async create(): Promise<BrowserSession> {
     const session = new BrowserSession();
-    const { chromium } = await import('playwright');
+    const { chromium } = await loadPlaywright();
     session._browser = await chromium.launch({ headless: true, args: BROWSER_ARGS });
     const ctx = await session._browser.newContext({
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -44,7 +67,7 @@ export class BrowserSession {
     session._page = await ctx.newPage();
 
     // Block heavy resources for faster page loads
-    await session._page.route('**/*', (route) => {
+    await session._page.route('**/*', (route: any) => {
       if (BLOCK_TYPES.has(route.request().resourceType())) {
         route.abort().catch(() => null);
       } else {
@@ -55,7 +78,7 @@ export class BrowserSession {
     return session;
   }
 
-  get page(): Page { return this._page; }
+  get page(): RuntimePage { return this._page; }
   get url(): string { return this._page.url(); }
   get lastAction(): string { return this._lastAction; }
 
@@ -142,7 +165,7 @@ export class BrowserSession {
       if (isCapturing || !this._frameActive) return;
       isCapturing = true;
       void this._page.screenshot({ type: 'jpeg', quality: 42 })
-        .then((buf) => {
+        .then((buf: Buffer) => {
           emit({
             type: 'frame',
             url: this._page.url(),
