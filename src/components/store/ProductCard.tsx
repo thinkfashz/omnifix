@@ -12,8 +12,8 @@ interface ProductCardProps {
   onAddToCart: (product: Product) => void;
 }
 
-function formatPrice(n: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+function formatPrice(n: number, currency = 'CLP') {
+  return new Intl.NumberFormat('es-CL', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n);
 }
 
 export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
@@ -22,7 +22,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
     : product.price;
 
   const stock = product.stock ?? 0;
-  const isOutOfStock = stock <= 0;
+  const isOutOfStock = stock <= 0 || product.availableForSale === false;
   const deliveryDays = product.delivery_days ? Number(product.delivery_days) : null;
 
   return (
@@ -56,6 +56,11 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           {product.featured ? (
             <span className="bg-yellow-500/90 text-black text-[10px] uppercase tracking-widest px-3 py-1 font-bold">
               Destacado
+            </span>
+          ) : null}
+          {product.source === 'shopify' ? (
+            <span className="bg-emerald-500/90 text-black text-[10px] uppercase tracking-widest px-3 py-1 font-bold">
+              Shopify
             </span>
           ) : null}
         </div>
@@ -98,9 +103,9 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
 
         <div className="mt-auto flex items-end justify-between">
           <div>
-            <span className="text-yellow-400 font-serif text-lg">{formatPrice(finalPrice)}</span>
+            <span className="text-yellow-400 font-serif text-lg">{formatPrice(finalPrice, product.currency || 'CLP')}</span>
             {product.discount_percentage ? (
-              <span className="text-zinc-600 text-xs line-through ml-2">{formatPrice(product.price)}</span>
+              <span className="text-zinc-600 text-xs line-through ml-2">{formatPrice(product.price, product.currency || 'CLP')}</span>
             ) : null}
           </div>
 
