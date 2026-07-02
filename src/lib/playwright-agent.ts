@@ -1,17 +1,8 @@
-/**
- * playwright-agent.ts
- * Helpers for headless browser automation used by the AI Agent page.
- *
- * Playwright cannot run inside the Cloudflare Workers runtime and its bundled
- * dependencies break OpenNext/esbuild. Keep the import hidden behind a runtime
- * loader so Cloudflare can deploy while Node/VPS environments can still use it.
- */
-
 export interface BrowseResult {
   url: string;
   title: string;
-  text: string;          // cleaned page text (max 6 000 chars)
-  screenshot: string;    // base64 image data URI
+  text: string;
+  screenshot: string;
   error?: string;
 }
 
@@ -22,182 +13,60 @@ export interface SearchResult {
   error?: string;
 }
 
-/** Max characters to return from a page — keeps tokens in check */
-const MAX_TEXT = 6_000;
+const DISABLED_BROWSER_MESSAGE =
+  'Navegacion visual deshabilitada en Cloudflare Workers. Playwright/Chromium debe ejecutarse en Node/VPS. Para busqueda web usa SERPER_API_KEY.';
 
-/** List of resource types to block for faster loading */
-const BLOCK_TYPES = new Set(['image', 'stylesheet', 'font', 'media', 'websocket']);
-
-function cleanText(raw: string): string {
-  return raw
-    .replace(/\s{3,}/g, '\n\n')
-    .replace(/\n{4,}/g, '\n\n')
-    .trim()
-    .slice(0, MAX_TEXT);
-}
-
-function isCloudflareLikeRuntime() {
-  return Boolean(
-    process.env.CF_PAGES === '1' ||
-    process.env.CLOUDFLARE === '1' ||
-    process.env.OPENNEXT_CLOUDFLARE === '1' ||
-    process.env.NEXT_RUNTIME === 'edge',
-  );
-}
-
-async function loadPlaywright(): Promise<{ chromium: any }> {
-  if (isCloudflareLikeRuntime()) {
-    throw new Error('Playwright está deshabilitado en Cloudflare Workers. Usa SERPER_API_KEY para búsquedas sin navegador o ejecuta navegación visual en Node/VPS.');
-  }
-
-  // Avoid a static import('playwright') so OpenNext/esbuild does not bundle
-  // playwright-core into the Cloudflare worker.
-  const dynamicImport = new Function('specifier', 'return import(specifier)') as (specifier: string) => Promise<{ chromium: any }>;
-  return dynamicImport('playwright');
-}
-
-/**
- * Navigate to a URL with a headless Chromium browser.
- * Returns page title, cleaned text content, and a base64 screenshot.
- */
 export async function browsePage(url: string): Promise<BrowseResult> {
-  let browser: any = null;
-  try {
-    const { chromium } = await loadPlaywright();
-    browser = await chromium.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--single-process',
-        '--ignore-certificate-errors',
-        '--ignore-ssl-errors',
-      ],
-    });
-    const ctx = await browser.newContext({
-      userAgent:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      viewport: { width: 1280, height: 800 },
-    });
-    const page = await ctx.newPage();
-
-    // Block heavy resources for speed
-    await page.route('**/*', (route: any) => {
-      if (BLOCK_TYPES.has(route.request().resourceType())) {
-        route.abort().catch(() => null);
-      } else {
-        route.continue().catch(() => null);
-      }
-    });
-
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20_000 });
-    await page.waitForTimeout(800); // allow JS to settle
-
-    const title = await page.title().catch(() => '');
-
-    // Extract visible text only (no scripts, styles, nav noise)
-    const rawText = await page.evaluate(() => {
-      const remove = (sel: string) => document.querySelectorAll(sel).forEach((el) => el.remove());
-      remove('script'); remove('style'); remove('nav'); remove('footer');
-      remove('header'); remove('noscript'); remove('[aria-hidden="true"]');
-      return document.body?.innerText ?? '';
-    });
-
-    const text = cleanText(rawText);
-
-    // Screenshot at reduced quality
-    const screenshotBuf = await page.screenshot({ type: 'jpeg', quality: 60, fullPage: false });
-    const screenshot = `data:image/jpeg;base64,${screenshotBuf.toString('base64')}`;
-
-    return { url, title, text, screenshot };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return { url, title: '', text: '', screenshot: '', error: msg };
-  } finally {
-    if (browser) await browser.close().catch(() => null);
-  }
+  return {
+    url,
+    title: 'Navegador no disponible en Cloudflare',
+    text: DISABLED_BROWSER_MESSAGE,
+    screenshot: '',
+    error: DISABLED_BROWSER_MESSAGE,
+  };
 }
 
-/**
- * Search the web using Serper.dev if API key is configured.
- * Cloudflare cannot run Playwright, so the DuckDuckGo browser fallback is only
- * available in Node/VPS environments.
- */
 export async function searchWeb(
   query: string,
   serperApiKey?: string,
   gl = 'cl',
 ): Promise<SearchResult> {
-  // Primary: Serper
-  if (serperApiKey) {
-    try {
-      const res = await fetch('https://google.serper.dev/search', {
-        method: 'POST',
-        headers: { 'X-API-KEY': serperApiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: query, num: 8, gl, hl: 'es' }),
-        signal: AbortSignal.timeout(12_000),
-      });
-      if (res.ok) {
-        const data = await res.json() as {
-          organic?: Array<{ title?: string; link?: string; snippet?: string }>;
-          answerBox?: { answer?: string; snippet?: string };
-          knowledgeGraph?: { description?: string };
-        };
-        const results = (data.organic ?? []).map((r) => ({
-          title: r.title ?? '',
-          url: r.link ?? '',
-          snippet: r.snippet ?? '',
-        }));
-        const answerBox =
-          data.answerBox?.answer ??
-          data.answerBox?.snippet ??
-          data.knowledgeGraph?.description;
-        return { ok: true, results, answerBox };
-      }
-    } catch { /* fall through */ }
-  }
-
-  if (isCloudflareLikeRuntime()) {
+  if (!serperApiKey) {
     return {
       ok: false,
       results: [],
-      error: 'Búsqueda sin SERPER_API_KEY no disponible en Cloudflare porque Playwright/Chromium no puede ejecutarse en Workers.',
+      error: 'SERPER_API_KEY no configurada. En Cloudflare no hay fallback con Playwright/Chromium.',
     };
   }
 
-  // Fallback: DuckDuckGo HTML scrape via Playwright, Node/VPS only.
-  return searchViaDDG(query);
-}
-
-async function searchViaDDG(query: string): Promise<SearchResult> {
-  let browser: any = null;
   try {
-    const { chromium } = await loadPlaywright();
-    browser = await chromium.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process', '--ignore-certificate-errors'],
-    });
-    const page = await (await browser.newContext()).newPage();
-    const encoded = encodeURIComponent(query);
-    await page.goto(`https://html.duckduckgo.com/html/?q=${encoded}`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 15_000,
+    const res = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: { 'X-API-KEY': serperApiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: query, num: 8, gl, hl: 'es' }),
+      signal: AbortSignal.timeout(12_000),
     });
 
-    const results = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll('.result')).slice(0, 6).map((el) => ({
-        title: (el.querySelector('.result__a') as HTMLElement)?.innerText ?? '',
-        url: (el.querySelector('.result__url') as HTMLElement)?.innerText ?? '',
-        snippet: (el.querySelector('.result__snippet') as HTMLElement)?.innerText ?? '',
-      }));
-    });
+    if (!res.ok) {
+      return { ok: false, results: [], error: `Serper respondio HTTP ${res.status}` };
+    }
 
-    return { ok: true, results };
+    const data = await res.json() as {
+      organic?: Array<{ title?: string; link?: string; snippet?: string }>;
+      answerBox?: { answer?: string; snippet?: string };
+      knowledgeGraph?: { description?: string };
+    };
+
+    return {
+      ok: true,
+      results: (data.organic ?? []).map((r) => ({
+        title: r.title ?? '',
+        url: r.link ?? '',
+        snippet: r.snippet ?? '',
+      })),
+      answerBox: data.answerBox?.answer ?? data.answerBox?.snippet ?? data.knowledgeGraph?.description,
+    };
   } catch (err) {
     return { ok: false, results: [], error: err instanceof Error ? err.message : String(err) };
-  } finally {
-    if (browser) await browser.close().catch(() => null);
   }
 }
