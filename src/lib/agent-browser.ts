@@ -7,7 +7,7 @@ export class BrowserSession {
   private _lastAction = '';
 
   static async create(): Promise<BrowserSession> {
-    throw new Error(DISABLED_MESSAGE);
+    return new BrowserSession();
   }
 
   get page(): never {
@@ -23,48 +23,48 @@ export class BrowserSession {
   }
 
   async screenshot(): Promise<string> {
-    throw new Error(DISABLED_MESSAGE);
+    return '';
   }
 
   async navigate(url: string): Promise<{ title: string; text: string }> {
     this._lastAction = `Navegacion bloqueada a ${url}`;
-    throw new Error(DISABLED_MESSAGE);
+    return { title: 'Navegador no disponible en Cloudflare', text: DISABLED_MESSAGE };
   }
 
   async click(target: string): Promise<string> {
     this._lastAction = `Click bloqueado en ${target}`;
-    throw new Error(DISABLED_MESSAGE);
+    return DISABLED_MESSAGE;
   }
 
   async fill(selector: string, text: string): Promise<string> {
     this._lastAction = `Escritura bloqueada en ${selector}`;
     void text;
-    throw new Error(DISABLED_MESSAGE);
+    return DISABLED_MESSAGE;
   }
 
   async pressKey(key: string): Promise<string> {
     this._lastAction = `Tecla bloqueada ${key}`;
-    throw new Error(DISABLED_MESSAGE);
+    return DISABLED_MESSAGE;
   }
 
   async scroll(direction: 'arriba' | 'abajo', px = 600): Promise<string> {
     this._lastAction = `Scroll bloqueado ${direction} ${px}`;
-    throw new Error(DISABLED_MESSAGE);
+    return DISABLED_MESSAGE;
   }
 
   async getContent(): Promise<string> {
-    throw new Error(DISABLED_MESSAGE);
+    return DISABLED_MESSAGE;
   }
 
   async waitForElement(selector: string, timeout = 8000): Promise<string> {
     this._lastAction = `Espera bloqueada ${selector} ${timeout}`;
-    throw new Error(DISABLED_MESSAGE);
+    return DISABLED_MESSAGE;
   }
 
   async withFrames(emit: EmitFn, actionLabel: string, action: () => Promise<void>): Promise<void> {
     this._lastAction = actionLabel;
+    void action;
     emit({ type: 'error', content: DISABLED_MESSAGE });
-    await action();
   }
 
   async close(): Promise<void> {
