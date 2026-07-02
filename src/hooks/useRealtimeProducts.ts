@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ProductShippingMode } from '@/lib/shipping';
 
-const PRODUCTS_CACHE_KEY = 'fabrick.products.cache.v1';
+const PRODUCTS_CACHE_KEY = 'omnifix.products.cache.v1';
 const PRODUCTS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export interface Product {
@@ -27,6 +27,13 @@ export interface Product {
   shipping_weight_kg?: number | null;
   shipping_dimensions?: string | null;
   shipping_region_overrides?: Record<string, number> | null;
+  source?: 'shopify' | string;
+  source_url?: string;
+  shopifyProductId?: string;
+  shopifyVariantId?: string;
+  shopifyHandle?: string;
+  availableForSale?: boolean;
+  currency?: string;
 }
 
 interface CatalogEvent {
