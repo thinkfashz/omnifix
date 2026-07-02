@@ -18,8 +18,8 @@ export interface CartItem {
   quantity: number;
 }
 
-const CART_STORAGE_KEY = 'fabrick.cart.v2';
-export const CART_SESSION_KEY = 'fabrick.cart.session.v2';
+const CART_STORAGE_KEY = 'omnifix.cart.v1';
+export const CART_SESSION_KEY = 'omnifix.cart.session.v1';
 const CART_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 interface CartContextValue {
@@ -44,7 +44,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartOpen, setCartOpen] = useState(false);
   const hydrated = useRef(false);
 
-  // Load from localStorage on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem(CART_STORAGE_KEY);
@@ -60,7 +59,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     hydrated.current = true;
   }, []);
 
-  // Persist to localStorage on every change (after hydration)
   useEffect(() => {
     if (!hydrated.current) return;
     try {
@@ -100,7 +98,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const goToCheckout = useCallback(() => {
     if (items.length === 0) return;
-    // Serialize cart to sessionStorage so CheckoutApp can read it
     try {
       sessionStorage.setItem(CART_SESSION_KEY, JSON.stringify(items));
     } catch {
