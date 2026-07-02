@@ -1,4 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-label="Omnifix">
-  <rect width="100%" height="100%" fill="#ffffff"/>
-  <image width="900" height="900" href="data:image/jpeg;base64,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" preserveAspectRatio="xMidYMid meet"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img" aria-label="Omnifix">
+  <defs>
+    <linearGradient id="g1" x1="160" y1="210" x2="980" y2="520" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#020B1F"/>
+      <stop offset="0.45" stop-color="#082B78"/>
+      <stop offset="0.72" stop-color="#06B6D4"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="340" y1="520" x2="900" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#020617"/>
+      <stop offset="0.55" stop-color="#0F5BFF"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#0F172A" flood-opacity="0.23"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="820" fill="#fff"/>
+  <g filter="url(#shadow)">
+    <path d="M548 112 L304 520 L476 520 L619 279 Z" fill="#061126"/>
+    <path d="M548 112 L609 272 L485 520 L304 520 Z" fill="url(#g1)" opacity="0.86"/>
+    <path d="M620 110 L912 584 L732 584 L548 285 Z" fill="url(#g2)"/>
+    <path d="M620 110 L664 245 L773 584 L912 584 Z" fill="#0B63FF" opacity="0.78"/>
+    <path d="M478 520 L732 520 L777 584 L326 584 Z" fill="#0F5BFF"/>
+    <path d="M520 507 L724 507 L732 520 L478 520 Z" fill="#38BDF8" opacity="0.75"/>
+  </g>
+  <text x="600" y="710" text-anchor="middle" font-family="Montserrat, Arial, sans-serif" font-size="120" font-weight="900" letter-spacing="28" fill="#061126">OMNIFI<tspan fill="#1463FF">X</tspan></text>
+  <g font-family="Montserrat, Arial, sans-serif" font-size="30" font-weight="600" letter-spacing="24" fill="#061126">
+    <text x="600" y="778" text-anchor="middle">TODO TIENE <tspan fill="#1463FF">SOLUCIÓN</tspan></text>
+  </g>
+  <path d="M126 766 H220" stroke="#1463FF" stroke-width="6" stroke-linecap="round"/>
+  <path d="M980 766 H1074" stroke="#1463FF" stroke-width="6" stroke-linecap="round"/>
 </svg>
