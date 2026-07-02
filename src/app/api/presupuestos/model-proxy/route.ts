@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export const dynamic = 'force-dynamic';
-// Edge runtime supports true streaming — avoids the 4.5 MB serverless body limit
-// that would kill large GLB files buffered with arrayBuffer().
-export const runtime = 'edge';
+// OpenNext for Cloudflare currently bundles this API with the default server function.
+// Keep it on the Node.js runtime to avoid the separate Edge function requirement during deploy.
+export const runtime = 'nodejs';
 
 const ALLOWED_HOSTS = ['insforge.app', 'cloudinary.com'];
 const MAX_DECLARED_BYTES = 150 * 1024 * 1024; // reject only if Content-Length says > 150 MB
@@ -76,8 +76,6 @@ export async function GET(request: NextRequest) {
     };
     if (lengthHeader) responseHeaders['Content-Length'] = lengthHeader;
 
-    // Pass the ReadableStream directly — no arrayBuffer() buffering.
-    // The Edge runtime pipes bytes straight to the client, bypassing size limits.
     return new NextResponse(upstream.body, { status: 200, headers: responseHeaders });
   } catch (error) {
     return NextResponse.json(
