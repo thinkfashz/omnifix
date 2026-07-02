@@ -1,15 +1,16 @@
 'use client';
 
+import Image from 'next/image';
 import { type KeyboardEvent } from 'react';
-import { FabrickPeakIcon } from '@/components/FabrickBrandIcon';
 
 interface Props {
   onClick?: () => void;
   animate?: boolean;
   className?: string;
+  compact?: boolean;
 }
 
-export default function FabrickLogo({ onClick, className = '' }: Props) {
+export default function FabrickLogo({ onClick, className = '', compact = false }: Props) {
   const isInteractive = typeof onClick === 'function';
 
   const handleKey = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -19,15 +20,19 @@ export default function FabrickLogo({ onClick, className = '' }: Props) {
 
   const content = (
     <>
-      <FabrickPeakIcon size={34} />
-      <span className="flex flex-col leading-tight">
-        <span className="text-xs font-black uppercase tracking-widest text-white sm:text-sm">
-          Fabrick
-        </span>
-        <span className="text-[9px] font-light uppercase tracking-widest text-zinc-500 sm:text-[10px]">
-          Soluciones
-        </span>
+      <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl border border-blue-400/25 bg-white shadow-[0_0_24px_rgba(37,99,235,.18)]">
+        <Image src="/omnifix-logo.svg" alt="Omnifix" fill sizes="48px" className="object-cover" priority />
       </span>
+      {!compact && (
+        <span className="flex flex-col leading-tight">
+          <span className="text-xs font-black uppercase tracking-[0.18em] text-white sm:text-sm">
+            Omnifix
+          </span>
+          <span className="text-[9px] font-light uppercase tracking-[0.24em] text-blue-300/80 sm:text-[10px]">
+            Todo tiene solución
+          </span>
+        </span>
+      )}
     </>
   );
 
@@ -40,14 +45,14 @@ export default function FabrickLogo({ onClick, className = '' }: Props) {
 
   if (isInteractive) {
     return (
-      <div onClick={onClick} onKeyDown={handleKey} role="button" tabIndex={0} aria-label="Soluciones Fabrick — inicio" className={rootClass}>
+      <div onClick={onClick} onKeyDown={handleKey} role="button" tabIndex={0} aria-label="Omnifix — inicio" className={rootClass}>
         {content}
       </div>
     );
   }
 
   return (
-    <div role="img" aria-label="Soluciones Fabrick — inicio" className={rootClass}>
+    <div role="img" aria-label="Omnifix — inicio" className={rootClass}>
       {content}
     </div>
   );
