@@ -36,7 +36,8 @@ export type HookEvent =
   | 'product.after_create'
   | 'product.after_update'
   | 'checkout.before_pay'
-  | 'customer.signup';
+  | 'customer.signup'
+  | 'shopify.webhook';
 
 interface HookRow {
   id: string;
