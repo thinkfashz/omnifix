@@ -1,7 +1,7 @@
 'use client';
 
-import Image from 'next/image';
 import { type KeyboardEvent } from 'react';
+import Omnifix3DTextLogo from './Omnifix3DTextLogo';
 
 interface Props {
   onClick?: () => void;
@@ -18,30 +18,23 @@ export default function FabrickLogo({ onClick, className = '', compact = false }
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onClick(); }
   };
 
-  const content = (
-    <>
-      <span className="relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl border border-blue-400/25 bg-white shadow-[0_0_24px_rgba(37,99,235,.18)]">
-        <Image src="/omnifix-logo.svg" alt="Omnifix" fill sizes="48px" className="object-cover" priority />
-      </span>
-      {!compact && (
-        <span className="flex flex-col leading-tight">
-          <span className="text-xs font-black uppercase tracking-[0.18em] text-white sm:text-sm">
-            Omnifix
-          </span>
-          <span className="text-[9px] font-light uppercase tracking-[0.24em] text-blue-300/80 sm:text-[10px]">
-            Todo tiene solución
-          </span>
-        </span>
-      )}
-    </>
-  );
-
   const rootClass = [
     'group inline-flex select-none items-center gap-2 sm:gap-2.5',
     'transition-transform duration-300',
     isInteractive ? 'cursor-pointer hover:-translate-y-0.5' : '',
     className,
   ].filter(Boolean).join(' ');
+
+  const content = (
+    <Omnifix3DTextLogo
+      compact={compact}
+      showText={!compact}
+      showTagline={!compact}
+      text="Omnifix"
+      interactive={false}
+      className={compact ? 'scale-[.92]' : ''}
+    />
+  );
 
   if (isInteractive) {
     return (
