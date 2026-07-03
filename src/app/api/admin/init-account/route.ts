@@ -6,22 +6,43 @@ import {
   validateInitSecret,
 } from '@/lib/adminAuth';
 
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'f.eduardomicolta@gmail.com')
-  .trim()
-  .toLowerCase();
-
 const INSFORGE_BASE = (
   process.env.NEXT_PUBLIC_INSFORGE_URL || 'https://txv86efe.us-east.insforge.app'
 ).replace(/\/+$/, '');
 
-async function ensureAdminRowViaSql(email: string): Promise<boolean> {
+type InitBody = {
+  email?: string;
+  password?: string;
+  name?: string;
+  initSecret?: string;
+};
+
+function normalizeEmail(value: unknown) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function normalizeName(value: unknown) {
+  const name = String(value || '').trim();
+  return name ? name.slice(0, 80) : 'Admin Omnifix';
+}
+
+async function readInitBody(request: Request): Promise<InitBody> {
+  try {
+    return (await request.json()) as InitBody;
+  } catch {
+    return {};
+  }
+}
+
+async function ensureAdminRowViaSql(email: string, name: string): Promise<boolean> {
   const apiKey = process.env.INSFORGE_API_KEY;
   if (!apiKey) return false;
   const safeEmail = email.replace(/'/g, "''");
+  const safeName = name.replace(/'/g, "''");
   const query =
     `INSERT INTO public.admin_users (email, nombre, rol, aprobado) ` +
-    `VALUES ('${safeEmail}', 'Admin Fabrick', 'superadmin', true) ` +
-    `ON CONFLICT (email) DO UPDATE SET rol = 'superadmin', aprobado = true`;
+    `VALUES ('${safeEmail}', '${safeName}', 'superadmin', true) ` +
+    `ON CONFLICT (email) DO UPDATE SET nombre = EXCLUDED.nombre, rol = 'superadmin', aprobado = true`;
   try {
     const res = await fetch(`${INSFORGE_BASE}/api/database/advance/rawsql/unrestricted`, {
       method: 'POST',
@@ -36,32 +57,22 @@ async function ensureAdminRowViaSql(email: string): Promise<boolean> {
 }
 
 export async function POST(request: Request) {
-  // ── Hardening (Greptile post-mortem of PR #149) ──────────────────────
-  // The endpoint used to default `ADMIN_INITIAL_PASSWORD` to a hardcoded
-  // string and ran without auth. That meant anyone who cloned the public
-  // repo could deploy it, hit /api/admin/init-account, and create the
-  // admin account with a known password — a self-pwn waiting to happen.
-  //
-  // Hardening applied:
-  //  1. ADMIN_INITIAL_PASSWORD is now REQUIRED env var (no default). The
-  //     handler refuses to proceed if it's empty.
-  //  2. ADMIN_INIT_SECRET is also REQUIRED. The client must echo it back
-  //     in the `x-admin-init-secret` header. Operators set this in the
-  //     same Vercel/host env-vars panel where they set the password, and
-  //     paste it into the init UI when bootstrapping. Comparison is
-  //     constant-time so no timing oracle leaks.
-  // ─────────────────────────────────────────────────────────────────────
-  const initialPassword = (process.env.ADMIN_INITIAL_PASSWORD ?? '').trim();
+  const body = await readInitBody(request);
   const expectedSecret = (process.env.ADMIN_INIT_SECRET ?? '').trim();
-  if (!initialPassword || !expectedSecret) {
+  const adminEmail = normalizeEmail(body.email || process.env.ADMIN_EMAIL);
+  const initialPassword = String(body.password || process.env.ADMIN_INITIAL_PASSWORD || '').trim();
+  const adminName = normalizeName(body.name);
+
+  if (!expectedSecret || !adminEmail || !initialPassword) {
     const missing: string[] = [];
-    if (!initialPassword) missing.push('ADMIN_INITIAL_PASSWORD');
     if (!expectedSecret) missing.push('ADMIN_INIT_SECRET');
+    if (!adminEmail) missing.push('email');
+    if (!initialPassword) missing.push('password');
     return NextResponse.json(
       {
         error:
-          `Init no configurado. Faltan variables de entorno: ${missing.join(', ')}. ` +
-          'Configúralas en Vercel → Settings → Environment Variables (marcadas para Production) y vuelve a desplegar.',
+          `Init no configurado. Faltan datos: ${missing.join(', ')}. ` +
+          'Configura ADMIN_INIT_SECRET en Vercel y usa /admin/setup para escribir el correo y la contraseña del nuevo superadmin.',
         code: 'INIT_NOT_CONFIGURED',
         missing,
       },
@@ -69,20 +80,26 @@ export async function POST(request: Request) {
     );
   }
 
-  const providedSecret = request.headers.get('x-admin-init-secret');
+  if (!adminEmail.includes('@') || adminEmail.length < 6) {
+    return NextResponse.json({ error: 'Correo admin inválido.' }, { status: 400 });
+  }
+
+  if (initialPassword.length < 8) {
+    return NextResponse.json({ error: 'La contraseña debe tener mínimo 8 caracteres.' }, { status: 400 });
+  }
+
+  const providedSecret = request.headers.get('x-admin-init-secret') || body.initSecret;
   if (!validateInitSecret(providedSecret, expectedSecret)) {
-    // Generic 401 — never echo whether the header was missing vs wrong.
     return NextResponse.json(
-      { error: 'No autorizado.' },
+      { error: 'No autorizado. El init secret no coincide.' },
       { status: 401 }
     );
   }
 
-  // Attempt to create the admin account in InsForge
   const { data: signUpData, error: signUpError } = await insforge.auth.signUp({
-    email: ADMIN_EMAIL,
+    email: adminEmail,
     password: initialPassword,
-    name: 'Admin Fabrick',
+    name: adminName,
   });
 
   const userAlreadyExists =
@@ -100,13 +117,9 @@ export async function POST(request: Request) {
     );
   }
 
-  // Ensure the admin email is in the admin_users table AND approved. Without
-  // `aprobado: true` the login route will block this bootstrap account with
-  // "Tu cuenta está pendiente de aprobación." once the team/invitations
-  // feature is in use (which adds an `aprobado` column defaulting to false).
   const bootstrapRow = {
-    email: ADMIN_EMAIL,
-    nombre: 'Admin Fabrick',
+    email: adminEmail,
+    nombre: adminName,
     rol: 'superadmin',
     aprobado: true,
   };
@@ -116,8 +129,6 @@ export async function POST(request: Request) {
     .upsert([bootstrapRow], { onConflict: 'email' });
 
   if (dbError) {
-    // Try a plain insert as fallback, then a best-effort update in case the
-    // row already exists with aprobado=false from a previous run.
     const { error: insertError } = await insforgeAdmin.database
       .from('admin_users')
       .insert([bootstrapRow]);
@@ -130,46 +141,34 @@ export async function POST(request: Request) {
       console.error('[AdminInit] DB error:', insertError);
     }
 
-    // Row likely exists — force-approve the bootstrap admin.
     const { error: approveError } = await insforgeAdmin.database
       .from('admin_users')
-      .update({ aprobado: true, rol: 'superadmin' })
-      .eq('email', ADMIN_EMAIL);
+      .update({ nombre: adminName, aprobado: true, rol: 'superadmin' })
+      .eq('email', adminEmail);
     if (approveError) {
       console.error('[AdminInit] failed to force-approve bootstrap admin:', approveError);
     }
 
-    // Final fallback: raw SQL via unrestricted endpoint (works even when SDK
-    // key lacks INSERT/UPDATE permissions on admin_users).
-    void ensureAdminRowViaSql(ADMIN_EMAIL);
+    void ensureAdminRowViaSql(adminEmail, adminName);
   }
 
   if (userAlreadyExists) {
-    // Do NOT clear the rate-limit here. Once the admin account exists this
-    // endpoint becomes a permanent gated handler that legitimate operators
-    // can still call (e.g. to re-approve the bootstrap admin), but a
-    // successful call no longer touches the IP counter — that would let
-    // an operator-with-the-secret bypass their own rate-limit, which is
-    // out of scope for this endpoint.
     return NextResponse.json({
       ok: false,
       alreadyExists: true,
+      email: adminEmail,
       message:
-        'La cuenta ya existe en InsForge. Si no recuerdas la contraseña, usa la opción de recuperación.',
+        'La cuenta ya existe en InsForge. La dejé aprobada como superadmin, pero la contraseña no se puede cambiar desde este init. Usa otro correo nuevo o restablece esa contraseña en InsForge Auth.',
     });
   }
 
-  // New-account branch only: the InsForge signUp succeeded for the very
-  // first time. Combined with the ADMIN_INIT_SECRET gate above, this is
-  // a solid proof of control of both the deployment env and the bootstrap
-  // intent — clear the IP rate-limit so the operator can sign in
-  // immediately afterwards.
   await clearFailedAttempts(getClientIp(request));
 
-  void signUpData; // consumed above; included to keep linter happy
+  void signUpData;
   return NextResponse.json({
     ok: true,
+    email: adminEmail,
     message:
-      'Cuenta de administrador creada correctamente. Ya puedes iniciar sesión con la contraseña configurada.',
+      'Superadmin creado correctamente. Ya puedes iniciar sesión con el correo y la contraseña que acabas de escribir.',
   });
 }
