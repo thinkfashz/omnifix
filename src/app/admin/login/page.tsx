@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Activity, ShieldCheck } from 'lucide-react';
+import { Activity, ShieldCheck, UserPlus } from 'lucide-react';
 import Omnifix3DTextLogo from '@/components/Omnifix3DTextLogo';
 
 function BootSecurityScreen() {
@@ -90,6 +91,7 @@ export default function AdminLoginPage() {
             {error && <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</div>}
             {success && <div className="rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">{success}</div>}
             <button type="button" onClick={() => void handleLogin()} disabled={loading} className="h-14 w-full rounded-full bg-blue-500 text-sm font-black uppercase tracking-[0.22em] text-white shadow-[0_18px_44px_rgba(37,99,235,.35)] transition hover:bg-white hover:text-blue-700 disabled:opacity-60">{loading ? 'Procesando...' : 'Entrar al admin'}</button>
+            <Link href="/admin/first-admin" className="flex h-12 items-center justify-center gap-2 rounded-full border border-blue-300/15 bg-white/[0.055] text-xs font-black uppercase tracking-[0.16em] text-blue-100 transition hover:bg-white/[0.09]"><UserPlus className="h-4 w-4" /> Crear superadmin por primera vez</Link>
           </div>
         </div>
         <p className="mt-5 flex items-center justify-center gap-2 text-center text-[10px] uppercase tracking-[0.28em] text-slate-500"><Activity className="h-3 w-3" /> Omnifix · Panel seguro</p>
