@@ -1,5 +1,6 @@
 'use client';
 
+import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Eye, EyeOff, ShieldCheck, UserPlus } from 'lucide-react';
@@ -23,7 +24,7 @@ export default function FirstAdminPage() {
     if (errorParam) setError(errorParam);
   }, []);
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage('');
     setError('');
