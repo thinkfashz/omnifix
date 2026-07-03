@@ -64,7 +64,11 @@ export default function AdminLoginPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
+    const setup = params.get('setup');
+    const setupEmail = params.get('email');
     if (params.get('idle') === '1') setSuccess('Tu sesión se cerró automáticamente por inactividad.');
+    if (setup === 'created') setSuccess('Superadmin creado y guardado correctamente. Ahora entra con la clave que acabas de crear.');
+    if (setupEmail) setEmail(setupEmail);
   }, []);
 
   async function handleLogin() {
