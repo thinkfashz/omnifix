@@ -37,6 +37,17 @@ function Field({ label, type = 'text', value, onChange, placeholder }: { label: 
   return <label className="block"><span className="mb-2 block text-[10px] font-black uppercase tracking-[0.28em] text-blue-200/75">{label}</span><input type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="h-14 w-full rounded-2xl border border-blue-300/15 bg-white/[0.055] px-5 text-sm font-semibold text-white outline-none placeholder:text-white/25 transition focus:border-blue-300/50 focus:bg-white/[0.08]" /></label>;
 }
 
+function explainLoginError(status: number, message?: string) {
+  const raw = message || 'Error al iniciar sesión.';
+  if (status === 401 && raw.toLowerCase().includes('credenciales')) {
+    return 'InsForge Auth rechazó este correo o contraseña. Causa probable: ese usuario no existe todavía en Auth, la clave no coincide, o aún no lo creaste desde “Crear superadmin por primera vez”.';
+  }
+  if (status === 403 && raw.toLowerCase().includes('permisos')) {
+    return 'Auth aceptó el correo, pero este usuario no está guardado/aprobado como administrador en admin_users. Créalo desde “Crear superadmin por primera vez”.';
+  }
+  return raw;
+}
+
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -76,7 +87,7 @@ export default function AdminLoginPage() {
     try {
       const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim().toLowerCase(), password }) });
       const json = await res.json().catch(() => ({})) as { error?: string };
-      if (!res.ok) { setError(json.error ?? 'Error al iniciar sesión.'); return; }
+      if (!res.ok) { setError(explainLoginError(res.status, json.error)); return; }
       router.replace('/admin');
     } catch { setError('Error de red. Inténtalo de nuevo.'); } finally { setLoading(false); }
   }
@@ -92,7 +103,7 @@ export default function AdminLoginPage() {
           <div className="mt-6 space-y-5">
             <Field label="Correo admin" type="email" value={email} onChange={setEmail} placeholder="admin@email.com" />
             <Field label="Contraseña" type="password" value={password} onChange={setPassword} placeholder="Tu contraseña" />
-            {error && <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</div>}
+            {error && <div className="rounded-2xl border border-rose-400/25 bg-rose-500/10 px-4 py-3 text-sm leading-6 text-rose-200">{error}</div>}
             {success && <div className="rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">{success}</div>}
             <button type="button" onClick={() => void handleLogin()} disabled={loading} className="h-14 w-full rounded-full bg-blue-500 text-sm font-black uppercase tracking-[0.22em] text-white shadow-[0_18px_44px_rgba(37,99,235,.35)] transition hover:bg-white hover:text-blue-700 disabled:opacity-60">{loading ? 'Procesando...' : 'Entrar al admin'}</button>
             <Link href="/admin/first-admin" className="flex h-12 items-center justify-center gap-2 rounded-full border border-blue-300/15 bg-white/[0.055] text-xs font-black uppercase tracking-[0.16em] text-blue-100 transition hover:bg-white/[0.09]"><UserPlus className="h-4 w-4" /> Crear superadmin por primera vez</Link>
