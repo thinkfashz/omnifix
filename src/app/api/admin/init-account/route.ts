@@ -13,8 +13,10 @@ const INSFORGE_BASE = (
 type InitBody = {
   email?: string;
   password?: string;
+  confirmPassword?: string;
   name?: string;
   initSecret?: string;
+  fromForm?: boolean;
 };
 
 function normalizeEmail(value: unknown) {
@@ -26,7 +28,37 @@ function normalizeName(value: unknown) {
   return name ? name.slice(0, 80) : 'Admin Omnifix';
 }
 
+function redirectSetup(request: Request, error: string) {
+  const url = new URL('/admin/first-admin', request.url);
+  url.searchParams.set('error', error.slice(0, 420));
+  return NextResponse.redirect(url, { status: 303 });
+}
+
+function redirectLogin(request: Request, email: string) {
+  const url = new URL('/admin/login', request.url);
+  url.searchParams.set('setup', 'created');
+  url.searchParams.set('email', email);
+  return NextResponse.redirect(url, { status: 303 });
+}
+
+function fail(request: Request, fromForm: boolean, error: string, status = 400) {
+  if (fromForm) return redirectSetup(request, error);
+  return NextResponse.json({ error }, { status });
+}
+
 async function readInitBody(request: Request): Promise<InitBody> {
+  const contentType = request.headers.get('content-type') || '';
+  if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+    const form = await request.formData();
+    return {
+      email: String(form.get('email') || ''),
+      password: String(form.get('password') || ''),
+      confirmPassword: String(form.get('confirmPassword') || ''),
+      name: String(form.get('name') || ''),
+      initSecret: String(form.get('initSecret') || ''),
+      fromForm: true,
+    };
+  }
   try {
     return (await request.json()) as InitBody;
   } catch {
@@ -58,9 +90,11 @@ async function ensureAdminRowViaSql(email: string, name: string): Promise<boolea
 
 export async function POST(request: Request) {
   const body = await readInitBody(request);
+  const fromForm = body.fromForm === true;
   const expectedSecret = (process.env.ADMIN_INIT_SECRET ?? '').trim();
   const adminEmail = normalizeEmail(body.email || process.env.ADMIN_EMAIL);
   const initialPassword = String(body.password || process.env.ADMIN_INITIAL_PASSWORD || '').trim();
+  const confirmPassword = String(body.confirmPassword || '').trim();
   const adminName = normalizeName(body.name);
 
   if (!expectedSecret || !adminEmail || !initialPassword) {
@@ -68,32 +102,29 @@ export async function POST(request: Request) {
     if (!expectedSecret) missing.push('ADMIN_INIT_SECRET');
     if (!adminEmail) missing.push('email');
     if (!initialPassword) missing.push('password');
-    return NextResponse.json(
-      {
-        error:
-          `Init no configurado. Faltan datos: ${missing.join(', ')}. ` +
-          'Configura ADMIN_INIT_SECRET en Vercel y usa /admin/first-admin para escribir el correo y la contraseña del nuevo superadmin.',
-        code: 'INIT_NOT_CONFIGURED',
-        missing,
-      },
-      { status: 500 }
+    return fail(
+      request,
+      fromForm,
+      `Init no configurado. Faltan datos: ${missing.join(', ')}. Configura ADMIN_INIT_SECRET en Vercel y usa /admin/first-admin.`,
+      500
     );
   }
 
   if (!adminEmail.includes('@') || adminEmail.length < 6) {
-    return NextResponse.json({ error: 'Correo admin inválido.' }, { status: 400 });
+    return fail(request, fromForm, 'Correo admin inválido.');
   }
 
   if (initialPassword.length < 8) {
-    return NextResponse.json({ error: 'La contraseña debe tener mínimo 8 caracteres.' }, { status: 400 });
+    return fail(request, fromForm, 'La contraseña debe tener mínimo 8 caracteres.');
+  }
+
+  if (fromForm && confirmPassword && initialPassword !== confirmPassword) {
+    return fail(request, true, 'Las claves no coinciden.');
   }
 
   const providedSecret = request.headers.get('x-admin-init-secret') || body.initSecret;
   if (!validateInitSecret(providedSecret, expectedSecret)) {
-    return NextResponse.json(
-      { error: 'No autorizado. El init secret no coincide.' },
-      { status: 401 }
-    );
+    return fail(request, fromForm, 'No autorizado. La clave de activación no coincide.', 401);
   }
 
   const { data: signUpData, error: signUpError } = await insforge.auth.signUp({
@@ -111,10 +142,7 @@ export async function POST(request: Request) {
       (signUpError.statusCode !== undefined && signUpError.statusCode === 409));
 
   if (signUpError && !userAlreadyExists) {
-    return NextResponse.json(
-      { error: signUpError.message || 'Error al crear la cuenta.' },
-      { status: 400 }
-    );
+    return fail(request, fromForm, signUpError.message || 'Error al crear la cuenta.');
   }
 
   const bootstrapRow = {
@@ -153,18 +181,15 @@ export async function POST(request: Request) {
   }
 
   if (userAlreadyExists) {
-    return NextResponse.json({
-      ok: false,
-      alreadyExists: true,
-      email: adminEmail,
-      message:
-        'La cuenta ya existe en InsForge. La dejé aprobada como superadmin, pero la contraseña no se puede cambiar desde este init. Usa otro correo nuevo o restablece esa contraseña en InsForge Auth.',
-    });
+    const message = 'La cuenta ya existe en InsForge. La dejé aprobada como superadmin, pero la contraseña no se puede cambiar desde este init. Usa otro correo nuevo o restablece esa contraseña en InsForge Auth.';
+    if (fromForm) return redirectSetup(request, message);
+    return NextResponse.json({ ok: false, alreadyExists: true, email: adminEmail, message });
   }
 
   await clearFailedAttempts(getClientIp(request));
 
   void signUpData;
+  if (fromForm) return redirectLogin(request, adminEmail);
   return NextResponse.json({
     ok: true,
     email: adminEmail,
