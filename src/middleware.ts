@@ -165,8 +165,9 @@ export async function middleware(request: NextRequest) {
   const isLogin = pathname === '/admin/login'
   const isJoin = pathname === '/admin/unirse'
   const isDemo = pathname === '/admin/acceso-demo'
+  const isFirstAdminSetup = pathname === '/admin/first-admin'
 
-  if (isAdmin && !isLogin && !isJoin && !isDemo) {
+  if (isAdmin && !isLogin && !isJoin && !isDemo && !isFirstAdminSetup) {
     if (!sessionCookie?.value || !validAdminSession) {
       const redirect = NextResponse.redirect(new URL('/admin/login', request.url))
       return isHtml ? withSecurityHeaders(redirect, nonce, csp) : redirect
