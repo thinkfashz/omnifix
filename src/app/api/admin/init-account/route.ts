@@ -164,20 +164,22 @@ export async function POST(request: Request) {
   const body = await readInitBody(request);
   const fromForm = body.fromForm === true;
   const expectedSecret = (process.env.ADMIN_INIT_SECRET ?? '').trim();
+  const expectedInitialPassword = (process.env.ADMIN_INITIAL_PASSWORD ?? '').trim();
   const adminEmail = normalizeEmail(body.email || process.env.ADMIN_EMAIL);
   const initialPassword = String(body.password || process.env.ADMIN_INITIAL_PASSWORD || '').trim();
   const confirmPassword = String(body.confirmPassword || '').trim();
   const adminName = normalizeName(body.name);
+  const activationSecrets = [expectedSecret, expectedInitialPassword].filter(Boolean);
 
-  if (!expectedSecret || !adminEmail || !initialPassword) {
+  if (activationSecrets.length === 0 || !adminEmail || !initialPassword) {
     const missing: string[] = [];
-    if (!expectedSecret) missing.push('ADMIN_INIT_SECRET');
+    if (activationSecrets.length === 0) missing.push('ADMIN_INIT_SECRET o ADMIN_INITIAL_PASSWORD');
     if (!adminEmail) missing.push('email');
     if (!initialPassword) missing.push('password');
     return fail(
       request,
       fromForm,
-      `Init no configurado. Faltan datos: ${missing.join(', ')}. Configura ADMIN_INIT_SECRET en Vercel y usa /admin/first-admin.`,
+      `Init no configurado. Faltan datos: ${missing.join(', ')}. Configura ADMIN_INIT_SECRET en Vercel y vuelve a desplegar.`,
       500
     );
   }
@@ -194,9 +196,15 @@ export async function POST(request: Request) {
     return fail(request, true, 'Las claves no coinciden.');
   }
 
-  const providedSecret = request.headers.get('x-admin-init-secret') || body.initSecret;
-  if (!validateInitSecret(providedSecret, expectedSecret)) {
-    return fail(request, fromForm, 'No autorizado. La clave de activación no coincide.', 401);
+  const providedSecret = String(request.headers.get('x-admin-init-secret') || body.initSecret || '').trim();
+  const activationOk = activationSecrets.some((secret) => validateInitSecret(providedSecret, secret));
+  if (!activationOk) {
+    return fail(
+      request,
+      fromForm,
+      'No autorizado. La clave de activación no coincide. Debe ser exactamente ADMIN_INIT_SECRET de Vercel. Como respaldo temporal también sirve ADMIN_INITIAL_PASSWORD si todavía existe. Revisa mayúsculas, espacios y redeploy.',
+      401
+    );
   }
 
   const { data: signUpData, error: signUpError } = await insforge.auth.signUp({
