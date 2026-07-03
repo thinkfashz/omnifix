@@ -10,6 +10,8 @@ const INSFORGE_BASE = (
   process.env.NEXT_PUBLIC_INSFORGE_URL || 'https://txv86efe.us-east.insforge.app'
 ).replace(/\/+$/, '');
 
+const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
 type InitBody = {
   email?: string;
   password?: string;
@@ -72,9 +74,9 @@ async function ensureAdminRowViaSql(email: string, name: string): Promise<boolea
   const safeEmail = email.replace(/'/g, "''");
   const safeName = name.replace(/'/g, "''");
   const query =
-    `INSERT INTO public.admin_users (email, nombre, rol, aprobado) ` +
-    `VALUES ('${safeEmail}', '${safeName}', 'superadmin', true) ` +
-    `ON CONFLICT (email) DO UPDATE SET nombre = EXCLUDED.nombre, rol = 'superadmin', aprobado = true`;
+    `INSERT INTO public.admin_users (email, nombre, rol, aprobado, tenant_id) ` +
+    `VALUES ('${safeEmail}', '${safeName}', 'superadmin', true, '${DEFAULT_TENANT_ID}') ` +
+    `ON CONFLICT (email, tenant_id) DO UPDATE SET nombre = EXCLUDED.nombre, rol = 'superadmin', aprobado = true`;
   try {
     const res = await fetch(`${INSFORGE_BASE}/api/database/advance/rawsql/unrestricted`, {
       method: 'POST',
@@ -86,6 +88,76 @@ async function ensureAdminRowViaSql(email: string, name: string): Promise<boolea
   } catch {
     return false;
   }
+}
+
+async function ensureAdminRowViaClient(email: string, name: string) {
+  const tenantRow = {
+    email,
+    nombre: name,
+    rol: 'superadmin',
+    aprobado: true,
+    tenant_id: DEFAULT_TENANT_ID,
+  };
+
+  const { error: tenantUpsertError } = await insforgeAdmin.database
+    .from('admin_users')
+    .upsert([tenantRow], { onConflict: 'email,tenant_id' });
+
+  if (!tenantUpsertError) return { ok: true, method: 'client_tenant_upsert' };
+
+  const legacyRow = {
+    email,
+    nombre: name,
+    rol: 'superadmin',
+    aprobado: true,
+  };
+
+  const { error: legacyUpsertError } = await insforgeAdmin.database
+    .from('admin_users')
+    .upsert([legacyRow], { onConflict: 'email' });
+
+  if (!legacyUpsertError) {
+    const { error: updateTenantError } = await insforgeAdmin.database
+      .from('admin_users')
+      .update({ tenant_id: DEFAULT_TENANT_ID, nombre: name, rol: 'superadmin', aprobado: true })
+      .eq('email', email);
+    if (!updateTenantError) return { ok: true, method: 'client_legacy_upsert_then_tenant_update' };
+  }
+
+  const rawSqlOk = await ensureAdminRowViaSql(email, name);
+  if (rawSqlOk) return { ok: true, method: 'raw_sql_tenant_upsert' };
+
+  return {
+    ok: false,
+    method: 'failed',
+    error: tenantUpsertError?.message || legacyUpsertError?.message || 'No se pudo guardar admin_users.',
+  };
+}
+
+async function verifyAdminRow(email: string) {
+  const { data: tenantRows, error: tenantError } = await insforgeAdmin.database
+    .from('admin_users')
+    .select('email, rol, aprobado, tenant_id')
+    .eq('email', email)
+    .eq('tenant_id', DEFAULT_TENANT_ID)
+    .limit(1);
+
+  if (!tenantError && tenantRows && tenantRows.length > 0) {
+    return { ok: true, row: tenantRows[0] as { email: string; rol?: string; aprobado?: boolean; tenant_id?: string | null } };
+  }
+
+  const { data: legacyRows, error: legacyError } = await insforgeAdmin.database
+    .from('admin_users')
+    .select('email, rol, aprobado, tenant_id')
+    .eq('email', email)
+    .limit(1);
+
+  if (!legacyError && legacyRows && legacyRows.length > 0) {
+    const row = legacyRows[0] as { email: string; rol?: string; aprobado?: boolean; tenant_id?: string | null };
+    return { ok: row.aprobado === true && row.rol === 'superadmin' && row.tenant_id === DEFAULT_TENANT_ID, row };
+  }
+
+  return { ok: false, row: null };
 }
 
 export async function POST(request: Request) {
@@ -145,45 +217,30 @@ export async function POST(request: Request) {
     return fail(request, fromForm, signUpError.message || 'Error al crear la cuenta.');
   }
 
-  const bootstrapRow = {
-    email: adminEmail,
-    nombre: adminName,
-    rol: 'superadmin',
-    aprobado: true,
-  };
+  const saveResult = await ensureAdminRowViaClient(adminEmail, adminName);
+  if (!saveResult.ok) {
+    return fail(
+      request,
+      fromForm,
+      `El usuario Auth se creó, pero no pude guardarlo como superadmin en admin_users. Revisa INSFORGE_API_KEY y la tabla admin_users. Detalle: ${saveResult.error || 'sin detalle'}`,
+      500
+    );
+  }
 
-  const { error: dbError } = await insforgeAdmin.database
-    .from('admin_users')
-    .upsert([bootstrapRow], { onConflict: 'email' });
-
-  if (dbError) {
-    const { error: insertError } = await insforgeAdmin.database
-      .from('admin_users')
-      .insert([bootstrapRow]);
-
-    if (
-      insertError &&
-      !insertError.message.toLowerCase().includes('duplicate') &&
-      !insertError.message.toLowerCase().includes('unique')
-    ) {
-      console.error('[AdminInit] DB error:', insertError);
-    }
-
-    const { error: approveError } = await insforgeAdmin.database
-      .from('admin_users')
-      .update({ nombre: adminName, aprobado: true, rol: 'superadmin' })
-      .eq('email', adminEmail);
-    if (approveError) {
-      console.error('[AdminInit] failed to force-approve bootstrap admin:', approveError);
-    }
-
-    void ensureAdminRowViaSql(adminEmail, adminName);
+  const verified = await verifyAdminRow(adminEmail);
+  if (!verified.ok) {
+    return fail(
+      request,
+      fromForm,
+      'No pude verificar que el superadmin quedara guardado con tenant_id correcto. Revisa la columna tenant_id en admin_users.',
+      500
+    );
   }
 
   if (userAlreadyExists) {
-    const message = 'La cuenta ya existe en InsForge. La dejé aprobada como superadmin, pero la contraseña no se puede cambiar desde este init. Usa otro correo nuevo o restablece esa contraseña en InsForge Auth.';
+    const message = 'La cuenta ya existe en InsForge Auth. La dejé guardada y aprobada como superadmin, pero la contraseña no se cambia desde este init. Usa la contraseña anterior de ese correo o crea otro correo nuevo.';
     if (fromForm) return redirectSetup(request, message);
-    return NextResponse.json({ ok: false, alreadyExists: true, email: adminEmail, message });
+    return NextResponse.json({ ok: false, alreadyExists: true, email: adminEmail, adminSaved: true, adminRow: verified.row, message });
   }
 
   await clearFailedAttempts(getClientIp(request));
@@ -193,7 +250,10 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     email: adminEmail,
+    adminSaved: true,
+    adminRow: verified.row,
+    saveMethod: saveResult.method,
     message:
-      'Superadmin creado correctamente. Ya puedes iniciar sesión con el correo y la contraseña que acabas de escribir.',
+      'Superadmin creado y guardado correctamente. Ya puedes iniciar sesión con el correo y la contraseña que acabas de escribir.',
   });
 }
