@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       {
         error:
           `Init no configurado. Faltan datos: ${missing.join(', ')}. ` +
-          'Configura ADMIN_INIT_SECRET en Vercel y usa /admin/setup para escribir el correo y la contraseña del nuevo superadmin.',
+          'Configura ADMIN_INIT_SECRET en Vercel y usa /admin/first-admin para escribir el correo y la contraseña del nuevo superadmin.',
         code: 'INIT_NOT_CONFIGURED',
         missing,
       },
