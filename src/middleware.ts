@@ -129,6 +129,10 @@ function isMainIntegrationsApi(pathname: string): boolean {
   return pathname === '/api/admin/integrations'
 }
 
+function isShopifyIntegrationApi(pathname: string): boolean {
+  return pathname === '/api/admin/integrations/shopify'
+}
+
 function tenantIntegrationRewriteTarget(pathname: string): string | null {
   if (pathname === '/api/admin/integrations') return '/api/admin/tenant-integrations'
   if (pathname === '/api/admin/integrations/reveal') return '/api/admin/tenant-integrations/reveal'
@@ -168,8 +172,8 @@ export async function middleware(request: NextRequest) {
     if (sessionPayload.rol === 'viewer') {
       return applyGlobalSecurityHeaders(NextResponse.json({ error: 'Modo demo: integraciones es una zona crítica.' }, { status: 403 }), pathname)
     }
-    if (WRITE_METHODS.has(method) && sessionPayload.rol !== 'superadmin') {
-      return applyGlobalSecurityHeaders(NextResponse.json({ error: 'Solo superadmin puede modificar credenciales de integraciones.' }, { status: 403 }), pathname)
+    if ((WRITE_METHODS.has(method) && sessionPayload.rol !== 'superadmin') || (isShopifyIntegrationApi(pathname) && sessionPayload.rol !== 'superadmin')) {
+      return applyGlobalSecurityHeaders(NextResponse.json({ error: 'Solo superadmin puede modificar o leer credenciales de integraciones.' }, { status: 403 }), pathname)
     }
   }
 
@@ -285,6 +289,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon\.ico|icon-.*\.png|apple-touch-icon\.png|.*\.svg|sw\.js|robots\.txt|sitemap\.xml|manifest\.webmanifest).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|icon-.*\\.png|apple-touch-icon\\.png|.*\\.svg|sw\\.js|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest).*)',
   ],
 }
