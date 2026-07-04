@@ -86,10 +86,22 @@ async function isValidSession(value: string): Promise<boolean> {
   }
 }
 
-function withSecurityHeaders(response: NextResponse, nonce: string, csp: string): NextResponse {
+function applyGlobalSecurityHeaders(response: NextResponse, pathname = ''): NextResponse {
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self), payment=(self)')
+  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+    response.headers.set('Pragma', 'no-cache')
+  }
+  return response
+}
+
+function withSecurityHeaders(response: NextResponse, nonce: string, csp: string, pathname = ''): NextResponse {
   response.headers.set('x-nonce', nonce)
   response.headers.set('Content-Security-Policy', csp)
-  return response
+  return applyGlobalSecurityHeaders(response, pathname)
 }
 
 function isHtmlRequest(request: NextRequest): boolean {
@@ -145,19 +157,19 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith('/api/admin') && VIEWER_WRITE_METHODS.has(method)) {
     if (validAdminSession && sessionPayload.rol === 'viewer' && !isAllowedViewerApiWrite(pathname)) {
-      return NextResponse.json({ error: 'Modo demo: solo lectura. Acción bloqueada.' }, { status: 403 })
+      return applyGlobalSecurityHeaders(NextResponse.json({ error: 'Modo demo: solo lectura. Acción bloqueada.' }, { status: 403 }), pathname)
     }
   }
 
   if (isIntegrationsApi(pathname)) {
     if (!validAdminSession) {
-      return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
+      return applyGlobalSecurityHeaders(NextResponse.json({ error: 'No autenticado.' }, { status: 401 }), pathname)
     }
     if (sessionPayload.rol === 'viewer') {
-      return NextResponse.json({ error: 'Modo demo: integraciones es una zona crítica.' }, { status: 403 })
+      return applyGlobalSecurityHeaders(NextResponse.json({ error: 'Modo demo: integraciones es una zona crítica.' }, { status: 403 }), pathname)
     }
-    if (isMainIntegrationsApi(pathname) && WRITE_METHODS.has(method) && sessionPayload.rol !== 'superadmin') {
-      return NextResponse.json({ error: 'Solo superadmin puede modificar credenciales de integraciones.' }, { status: 403 })
+    if (WRITE_METHODS.has(method) && sessionPayload.rol !== 'superadmin') {
+      return applyGlobalSecurityHeaders(NextResponse.json({ error: 'Solo superadmin puede modificar credenciales de integraciones.' }, { status: 403 }), pathname)
     }
   }
 
@@ -170,7 +182,7 @@ export async function middleware(request: NextRequest) {
   if (isAdmin && !isLogin && !isJoin && !isDemo && !isFirstAdminSetup) {
     if (!sessionCookie?.value || !validAdminSession) {
       const redirect = NextResponse.redirect(new URL('/admin/login', request.url))
-      return isHtml ? withSecurityHeaders(redirect, nonce, csp) : redirect
+      return isHtml ? withSecurityHeaders(redirect, nonce, csp, pathname) : applyGlobalSecurityHeaders(redirect, pathname)
     }
 
     const suspendedPath = '/admin/plan-suspendido'
@@ -179,18 +191,18 @@ export async function middleware(request: NextRequest) {
       const tenantStatus = request.cookies.get('tenant_status')?.value
       if (tenantStatus === 'suspended' || tenantStatus === 'cancelled') {
         const redirect = NextResponse.redirect(new URL(suspendedPath, request.url))
-        return isHtml ? withSecurityHeaders(redirect, nonce, csp) : redirect
+        return isHtml ? withSecurityHeaders(redirect, nonce, csp, pathname) : applyGlobalSecurityHeaders(redirect, pathname)
       }
     }
 
     if (sessionPayload.rol === 'viewer' && isViewerBlockedPage(pathname)) {
       const redirect = NextResponse.redirect(new URL('/admin?demo=blocked', request.url))
-      return isHtml ? withSecurityHeaders(redirect, nonce, csp) : redirect
+      return isHtml ? withSecurityHeaders(redirect, nonce, csp, pathname) : applyGlobalSecurityHeaders(redirect, pathname)
     }
 
     if (pathname.startsWith('/admin/equipo') && sessionPayload.rol !== 'superadmin') {
       const redirect = NextResponse.redirect(new URL('/admin?forbidden=team', request.url))
-      return isHtml ? withSecurityHeaders(redirect, nonce, csp) : redirect
+      return isHtml ? withSecurityHeaders(redirect, nonce, csp, pathname) : applyGlobalSecurityHeaders(redirect, pathname)
     }
   }
 
@@ -234,14 +246,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!isPlatformHost(hostname) && (tenantStatus === 'suspended' || tenantStatus === 'cancelled')) {
-    return new NextResponse(
+    return applyGlobalSecurityHeaders(new NextResponse(
       '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Servicio suspendido</title></head>' +
       '<body style="font-family:sans-serif;text-align:center;padding:60px">' +
       '<h1>Tienda no disponible</h1>' +
       '<p>Esta tienda está temporalmente suspendida. Contacta al administrador para más información.</p>' +
       '</body></html>',
       { status: 402, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
-    )
+    ), pathname)
   }
 
   const requestHeaders = new Headers(request.headers)
@@ -256,7 +268,7 @@ export async function middleware(request: NextRequest) {
   if (integrationTarget) {
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = integrationTarget
-    return NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } })
+    return applyGlobalSecurityHeaders(NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }), pathname)
   }
 
   const response = NextResponse.next({ request: { headers: requestHeaders } })
@@ -268,11 +280,11 @@ export async function middleware(request: NextRequest) {
     )
   }
 
-  return isHtml ? withSecurityHeaders(response, nonce, csp) : response
+  return isHtml ? withSecurityHeaders(response, nonce, csp, pathname) : applyGlobalSecurityHeaders(response, pathname)
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon\\.ico|icon-.*\\.png|apple-touch-icon\\.png|.*\\.svg|sw\\.js|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest).*)',
+    '/((?!_next/static|_next/image|favicon\.ico|icon-.*\.png|apple-touch-icon\.png|.*\.svg|sw\.js|robots\.txt|sitemap\.xml|manifest\.webmanifest).*)',
   ],
 }
