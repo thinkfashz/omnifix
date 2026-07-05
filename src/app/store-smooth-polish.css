@@ -1,0 +1,89 @@
+html { scroll-behavior: smooth; }
+
+/* Omnifix store: elimina contenedor tipo app/card y deja flujo limpio */
+main[class*="26107a"] {
+  background: #f7f9fd !important;
+}
+
+main[class*="26107a"] > div {
+  max-width: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: #f7f9fd !important;
+  overflow: visible !important;
+}
+
+main[class*="26107a"] > div > nav {
+  display: none !important;
+}
+
+main[class*="26107a"] section {
+  max-width: 72rem !important;
+  margin-inline: auto !important;
+  padding-top: 7.5rem !important;
+}
+
+main[class*="26107a"] section > div:first-child {
+  min-height: 78svh !important;
+  margin-inline: calc(50% - 50vw) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background:
+    radial-gradient(circle at 78% 24%, rgba(37,99,235,.38), transparent 26rem),
+    radial-gradient(circle at 18% 16%, rgba(255,255,255,.95), transparent 26rem),
+    linear-gradient(150deg, #eef5ff 0%, #dce8f8 42%, #071327 100%) !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  padding: 8rem max(1.25rem, calc(50vw - 36rem)) 6.25rem !important;
+}
+
+main[class*="26107a"] section > div:first-child h1 {
+  max-width: 44rem !important;
+  font-size: clamp(3.2rem, 13vw, 7rem) !important;
+  line-height: .84 !important;
+  letter-spacing: -.075em !important;
+  color: #020617 !important;
+}
+
+main[class*="26107a"] section > div:first-child p {
+  color: rgba(15, 23, 42, .72) !important;
+}
+
+main[class*="26107a"] section > div:first-child a {
+  border-radius: 999px !important;
+  background: #2563eb !important;
+  color: #fff !important;
+  box-shadow: 0 18px 44px rgba(37,99,235,.34) !important;
+}
+
+main[class*="26107a"] section > div:nth-of-type(2) {
+  display: none !important;
+}
+
+main[class*="26107a"] label#catalogo {
+  margin-top: 3rem !important;
+  height: 3.5rem !important;
+  border-radius: 999px !important;
+  box-shadow: 0 16px 44px rgba(15,23,42,.07) !important;
+  ring: none !important;
+}
+
+main[class*="26107a"] article {
+  border: 0 !important;
+  border-radius: 1.7rem !important;
+  box-shadow: 0 18px 50px rgba(15,23,42,.08) !important;
+}
+
+main[class*="26107a"] article button:last-child {
+  border-radius: 999px !important;
+  background: #2563eb !important;
+  color: white !important;
+  border: 0 !important;
+}
+
+main[class*="26107a"] nav.fixed > div {
+  border-radius: 999px !important;
+  border: 0 !important;
+  box-shadow: 0 -14px 50px rgba(15,23,42,.12) !important;
+}
