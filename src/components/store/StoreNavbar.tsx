@@ -5,10 +5,10 @@ import Omnifix3DSvgLogo from '@/components/store/Omnifix3DSvgLogo';
 
 export default function StoreNavbar() {
   return (
-    <header className="relative z-30 bg-white px-5 pt-4">
-      <div className="mx-auto flex h-[104px] max-w-3xl items-center justify-center border-b border-slate-100">
-        <Link href="/" aria-label="Ir al inicio Omnifix" className="flex items-center justify-center">
-          <Omnifix3DSvgLogo className="h-[82px] w-[300px] max-w-[76vw]" />
+    <header className="pointer-events-none fixed inset-x-0 top-0 z-40 px-5 pt-3 md:pt-5">
+      <div className="mx-auto flex max-w-5xl items-center justify-center">
+        <Link href="/" aria-label="Ir al inicio Omnifix" className="pointer-events-auto flex items-center justify-center rounded-full bg-white/70 px-5 py-2 shadow-[0_18px_60px_rgba(15,23,42,.10)] backdrop-blur-2xl transition active:scale-95">
+          <Omnifix3DSvgLogo className="h-[58px] w-[220px] max-w-[64vw]" />
         </Link>
       </div>
     </header>
