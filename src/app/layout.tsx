@@ -4,6 +4,7 @@ import './globals.css';
 import './tenant-public-theme.css';
 import './responsive-safety.css';
 import './remove-obsolete-sections.css';
+import './store-smooth-polish.css';
 import InstallAppPrompt from '@/components/InstallAppPrompt';
 import SmoothScrollProvider from '@/components/SmoothScrollProvider';
 import OmnifixSplashScreen from '@/components/OmnifixSplashScreen';
@@ -78,25 +79,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <AuthProvider>
               <CartProvider>
                 <QuoteCartProvider>
-                  <SmoothScrollProvider />
                   <TenantThemeRuntime />
                   <TenantCopyRuntime />
-                  {children}
                   <TenantBrandingBar />
-                  <ServiceWorkerRegister />
-                  <InstallAppPrompt />
-                  <OmnifixMobileBottomNav />
-                  <CookieConsentBanner />
-                  <AIAgentChat hideOn={['/admin', '/auth', '/checkout', '/presupuestos', '/p/']} />
-                  <Analytics />
                   <CmsRealtimeListener />
                   <CmsPreviewOverlay />
+                  {children}
+                  <CookieConsentBanner />
+                  <OmnifixMobileBottomNav />
+                  <AIAgentChat />
+                  <InstallAppPrompt />
+                  <SmoothScrollProvider />
+                  <ServiceWorkerRegister />
+                  <Analytics />
                 </QuoteCartProvider>
               </CartProvider>
             </AuthProvider>
           </ThemeProvider>
         </SiteConfigProvider>
-        <CustomInjectionRoot slot="bodyEnd" />
       </body>
     </html>
   );
